@@ -125,7 +125,15 @@ class QMPProcess : public QProcess
 };
 
 
-// Constructor
+/*!
+ * \class QMPWidget
+ * \brief A Qt widget for embedding MPlayer
+ */
+
+
+/*!
+ * \brief Constructor
+ */
 QMPWidget::QMPWidget(QWidget *parent)
 	: QWidget(parent)
 {
@@ -136,7 +144,12 @@ QMPWidget::QMPWidget(QWidget *parent)
 	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
 }
 
-// Destructor
+/*!
+ * \brief Destructor
+ * \details
+ * This function will ask the MPlayer process to quit and block until it has really
+ * finished.
+ */
 QMPWidget::~QMPWidget()
 {
 	if (m_process->processState() == QProcess::Running) {
@@ -145,12 +158,23 @@ QMPWidget::~QMPWidget()
 	delete m_process;
 }
 
+/*!
+ * \brief Returns the current MPlayer process state
+ *
+ * \returns The process state
+ */
 QMPWidget::State QMPWidget::state() const
 {
 	return m_process->m_state;
 }
 
-// Starts the playback with the given arguments
+/*!
+ * \brief Starts the MPlayer process with the given arguments
+ * \details
+ * If there's another process running, it will be terminated first.
+ *
+ * \param args MPlayer command line arguments, typically a media file
+ */
 void QMPWidget::start(const QStringList &args)
 {
 	if (m_process->processState() == QProcess::Running) {
@@ -160,6 +184,9 @@ void QMPWidget::start(const QStringList &args)
 	m_process->startMPlayer(winId(), args);
 }
 
+/*!
+ * \brief Resumes playback
+ */
 void QMPWidget::play()
 {
 	if (m_process->m_state == PausedState) {
@@ -167,6 +194,9 @@ void QMPWidget::play()
 	}
 }
 
+/*!
+ * \brief Pauses playback
+ */
 void QMPWidget::pause()
 {
 	if (m_process->m_state == PlayingState) {
@@ -174,12 +204,27 @@ void QMPWidget::pause()
 	}
 }
 
+/*!
+ * \brief Stops playback
+ */
 void QMPWidget::stop()
 {
 	m_process->stop();
 }
 
-// Writes a command to the MPlayer input
+/*!
+ * \brief Sends a command to the MPlayer process
+ * \details 
+ * Since MPlayer is being run in slave mode, it reads commands from the standard
+ * input. It is assumed that the interface provided with this class might not be
+ * sufficient for some situations, so you can use this functions to directly
+ * control the MPlayer process. 
+ *
+ * For a complete list of commands for MPlayer's slave mode, see
+ * http://www.mplayerhq.hu/DOCS/tech/slave.txt
+ *
+ * \param command The command line. A newline character will be added internally.
+ */
 void QMPWidget::writeCommand(const QString &command)
 {
 	m_process->writeCommand(command);
