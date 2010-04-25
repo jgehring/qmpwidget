@@ -466,6 +466,7 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 
 void QMPWidget::resizeEvent(QResizeEvent *event)
 {
+	Q_UNUSED(event);
 	updateWidgetSize();
 }
 
