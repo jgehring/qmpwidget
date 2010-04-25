@@ -1,6 +1,30 @@
 /*
  *  qmpwidget - A Qt widget for embedding MPlayer
  *  Copyright (C) 2010 by Jonas Gehring
+ * 	All rights reserved.
+ *
+ * 	Redistribution and use in source and binary forms, with or without
+ * 	modification, are permitted provided that the following conditions are met:
+ *      * Redistributions of source code must retain the above copyright
+ * 	      notice, this list of conditions and the following disclaimer.
+ * 	    * Redistributions in binary form must reproduce the above copyright
+ * 	      notice, this list of conditions and the following disclaimer in the
+ * 	      documentation and/or other materials provided with the distribution.
+ * 	    * Neither the name of the copyright holders nor the
+ * 	      names of its contributors may be used to endorse or promote products
+ * 	      derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 
@@ -163,6 +187,20 @@ QMPWidget::State QMPWidget::state() const
 }
 
 /*!
+ * \brief Sets the path to the MPlayer executable
+ * \details
+ * Per default, it is assumed the MPlayer executable is
+ * available in the current OS path. Therefore, this value is
+ * set to "mplayer".
+ *
+ * \param path Path to the MPlayer executable
+ */
+void QMPWidget::setMPlayerPath(const QString &path)
+{
+	m_process->setMPlayerPath(path);
+}
+
+/*!
  * \brief Starts the MPlayer process with the given arguments
  * \details
  * If there's another process running, it will be terminated first.
@@ -320,6 +358,21 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 /*!
  * \class QMPWidget
  * \brief A Qt widget for embedding MPlayer
+ * \details
+ * This is a small class which allows Qt developers to embed an MPlayer instance into
+ * their application for convenient video playback. Starting with version 4.4, Qt
+ * can be build with Phonon, the KDE multimedia framework (see
+ * http://doc.trolltech.com/phonon-overview.html for an overview). However, the Phonon
+ * API provides only a limited amount of functionality, which may be too limited for some
+ * purposes.
+ *
+ * In contrast, this class provides a way of embedding a full-fledged movie
+ * player within an application. This means you can use all of
+ * <a href="http://www.mplayerhq.hu/design7/info.html">MPlayer's features</a>, but
+ * also that you will need to ship a MPlayer binary with your application if you can't make
+ * sure that it is already installed on a user system.
+ *
+ * For more information about MPlayer, please visit http://www.mplayerhq.hu/ .
  *
  * \section shortcuts Keyboard control
  * The following keyboard shortcuts are implemented. A table listing the
@@ -368,6 +421,36 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
  *
  * \section implementation Implementation details
  * TODO
+ *
+ * \section license License
+\verbatim
+qmpwidget - A Qt widget for embedding MPlayer
+Copyright (C) 2010 by Jonas Gehring
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+   * Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+   * Neither the name of the copyright holders nor the
+     names of its contributors may be used to endorse or promote products
+     derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+\endverbatim
  */
 
 /*!
