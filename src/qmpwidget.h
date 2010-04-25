@@ -54,13 +54,29 @@ class QMPWidget : public QWidget
 			ErrorState
 		};
 
+		struct MediaInfo {
+			QString videoCodec;
+			QSize size;
+			double fps;
+			int bpp;
+			double videoBitrate;
+
+			QString audioCodec;
+			int sampleRate;
+			int channels;
+			double audioBitrate;
+		};
+
 	public:
 		QMPWidget(QWidget *parent = 0);
 		~QMPWidget();
 
 		State state() const;
+		MediaInfo mediaInfo() const;
 
 		void setMPlayerPath(const QString &path);
+
+		virtual QSize sizeHint() const;
 
 	public slots:
 		void start(const QStringList &args);
@@ -76,6 +92,7 @@ class QMPWidget : public QWidget
 
 	signals:
 		void stateChanged(int state);
+		void mediaInfoAvailable();
 		void error(const QString &reason);
 
 	private:

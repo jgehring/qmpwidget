@@ -43,7 +43,8 @@ class QMPProcess : public QProcess
 
 	public:
 		QMPProcess(QObject *parent = 0)
-			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer")
+			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer"),
+			  m_mediaInfoAvailable(false)
 		{
 			connect(this, SIGNAL(readyReadStandardOutput()), this, SLOT(readStdout()));
 			connect(this, SIGNAL(readyReadStandardError()), this, SLOT(readStderr()));
@@ -96,22 +97,9 @@ class QMPProcess : public QProcess
 			writeCommand("stop");
 		}
 
-		// Parses a line of MPlayer output
-		void parseLine(const QString &line)
-		{
-			if (line.startsWith("Playing ")) {
-				changeState(QMPWidget::LoadingState);
-			} else if (line.startsWith("Starting playback...")) {
-				changeState(QMPWidget::PlayingState);
-			} else if (line.startsWith("File not found: ")) {
-				changeState(QMPWidget::ErrorState);
-			} else if (line == "Exiting... (Quit)") {
-				changeState(QMPWidget::NotStartedState);
-			}
-		}
-
 	signals:
 		void stateChanged(int state);
+		void mediaInfoAvailable();
 		void error(const QString &reason);
 
 	private slots:
@@ -131,6 +119,64 @@ class QMPProcess : public QProcess
 			}
 		}
 
+		// Parses a line of MPlayer output
+		void parseLine(const QString &line)
+		{
+			if (line.startsWith("Playing ")) {
+				changeState(QMPWidget::LoadingState);
+			} else if (line.startsWith("Starting playback...")) {
+				changeState(QMPWidget::PlayingState);
+			} else if (line.startsWith("File not found: ")) {
+				changeState(QMPWidget::ErrorState);
+			} else if (line.startsWith("VIDEO:")) {
+				parseVideoInfo(line);
+			} else if (line.startsWith("AUDIO:")) {
+				parseAudioInfo(line);
+			} else if (line == "Exiting... (Quit)") {
+				changeState(QMPWidget::NotStartedState);
+			}
+		}
+
+		void parseVideoInfo(const QString &line)
+		{
+			QStringList info = line.split(" ", QString::SkipEmptyParts);
+			for (int i = 0; i < info.count(); i++) {
+				if (info[i].startsWith("[")) {
+					m_mediaInfo.videoCodec = info[i].mid(1, info[i].length()-2);
+				} else if (info[i].split("x").count() == 2) {
+					QStringList l = info[i].split("x");
+					m_mediaInfo.size.setWidth(l[0].toInt());
+					m_mediaInfo.size.setHeight(l[1].toInt());
+				} else if (info[i].endsWith("bpp")) {
+					m_mediaInfo.bpp = info[i].toInt();
+				} else if (info[i] == "fps" && i > 0) {
+					m_mediaInfo.fps = info[i-1].toDouble();
+				} else if (info[i] == "kbps" && i > 0) {
+					m_mediaInfo.videoBitrate = info[i-1].toDouble();
+				}
+			}
+
+			m_mediaInfoAvailable = true;
+			emit mediaInfoAvailable();
+		}
+
+		void parseAudioInfo(const QString &line)
+		{
+			QStringList info = line.split(" ", QString::SkipEmptyParts);
+			for (int i = 0; i < info.count(); i++) {
+				if (info[i] == "Hz," && i > 0) {
+					m_mediaInfo.sampleRate = info[i-1].toInt();
+				} else if (info[i] == "ch," && i > 0) {
+					m_mediaInfo.channels = info[i-1].toInt();
+				} else if (info[i].startsWith("kbit") && i > 0) {
+					m_mediaInfo.audioBitrate = info[i-1].toDouble();
+				}
+			}
+
+			m_mediaInfoAvailable = true;
+			emit mediaInfoAvailable();
+		}
+
 	private:
 		// Changes the current state, possibly emitting multiple signals
 		void changeState(QMPWidget::State state, const QString &comment = QString())
@@ -138,14 +184,29 @@ class QMPProcess : public QProcess
 			m_state = state;
 			emit stateChanged(m_state);
 
-			if (m_state == QMPWidget::ErrorState) {
-				emit error(comment);
+			switch (m_state) {
+				case QMPWidget::NotStartedState:
+					m_mediaInfoAvailable = false;
+					break;
+
+				case QMPWidget::ErrorState:
+					emit error(comment);
+					m_mediaInfoAvailable = false;
+					break;
+
+				default: break;
+			}
+
+			if (!m_mediaInfoAvailable) {
+				m_mediaInfo = QMPWidget::MediaInfo();
 			}
 		}
 
 	public:
 		QMPWidget::State m_state;
 		QString m_mplayerPath;
+		bool m_mediaInfoAvailable;
+		QMPWidget::MediaInfo m_mediaInfo;
 };
 
 
@@ -159,6 +220,7 @@ QMPWidget::QMPWidget(QWidget *parent)
 
 	m_process = new QMPProcess(this);
 	connect(m_process, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
+	connect(m_process, SIGNAL(mediaInfoAvailable()), this, SIGNAL(mediaInfoAvailable()));
 	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
 }
 
@@ -186,6 +248,11 @@ QMPWidget::State QMPWidget::state() const
 	return m_process->m_state;
 }
 
+QMPWidget::MediaInfo QMPWidget::mediaInfo() const
+{
+	return m_process->m_mediaInfo;
+}
+
 /*!
  * \brief Sets the path to the MPlayer executable
  * \details
@@ -198,6 +265,14 @@ QMPWidget::State QMPWidget::state() const
 void QMPWidget::setMPlayerPath(const QString &path)
 {
 	m_process->setMPlayerPath(path);
+}
+
+QSize QMPWidget::sizeHint() const
+{
+	if (m_process->m_mediaInfoAvailable) {
+		return m_process->m_mediaInfo.size;
+	}
+	return QWidget::sizeHint();
 }
 
 /*!

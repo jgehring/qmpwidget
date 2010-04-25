@@ -37,8 +37,21 @@
 // Custom player
 class Player : public QMPWidget
 {
+	Q_OBJECT
+
 	public:
-		Player() : QMPWidget() { }
+		Player() : QMPWidget()
+		{
+			connect(this, SIGNAL(mediaInfoAvailable()), this, SLOT(readMediaInfo()));
+		}
+
+	private slots:
+		void readMediaInfo()
+		{
+			if (!mediaInfo().size.isNull() && size() != mediaInfo().size) {
+				resize(mediaInfo().size.width(), mediaInfo().size.height());
+			}
+		}
 
 	protected:
 		void showEvent(QShowEvent *event)
@@ -60,3 +73,6 @@ int main(int argc, char **argv)
 
 	return app.exec();
 }
+
+
+#include "main.moc"
