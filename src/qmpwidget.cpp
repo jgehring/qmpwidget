@@ -225,6 +225,7 @@ QMPWidget::QMPWidget(QWidget *parent)
 
 	m_widget = new QWidget(this);
 	m_widget->setAutoFillBackground(true);
+	m_widget->setMouseTracking(true);
 
 	QPalette p = palette();
 	p.setColor(QPalette::Window, Qt::black);
