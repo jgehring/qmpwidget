@@ -1,4 +1,6 @@
 *.[oa]
+*.moc
 *~
+.*.swp
 Makefile
 moc_*.cpp
