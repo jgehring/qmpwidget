@@ -10,8 +10,9 @@
 
 #include <QWidget>
 
-class QProcess;
 class QStringList;
+
+class QMPProcess;
 
 
 class QMPWidget : public QWidget
@@ -47,17 +48,8 @@ class QMPWidget : public QWidget
 		void stateChanged(int state);
 		void error(const QString &reason);
 
-	private slots:
-		void readStdout();
-		void readStderr();
-
 	private:
-		void changeState(State state, const QString &comment = QString());
-		void parseLine(const QString &line);
-
-	private:
-		QProcess *m_process;
-		int m_state;
+		QMPProcess *m_process;
 };
 
 
