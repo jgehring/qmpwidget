@@ -107,6 +107,7 @@ class QMPProcess : public QProcess
 		{
 			QStringList lines = QString::fromLocal8Bit(readAllStandardOutput()).split("\n", QString::SkipEmptyParts);
 			for (int i = 0; i < lines.count(); i++) {
+				lines[i].remove("\r");
 				parseLine(lines[i]);
 			}
 		}
@@ -115,6 +116,7 @@ class QMPProcess : public QProcess
 		{
 			QStringList lines = QString::fromLocal8Bit(readAllStandardOutput()).split("\n", QString::SkipEmptyParts);
 			for (int i = 0; i < lines.count(); i++) {
+				lines[i].remove("\r");
 				parseLine(lines[i]);
 			}
 		}
@@ -124,7 +126,7 @@ class QMPProcess : public QProcess
 		{
 			if (line.startsWith("Playing ")) {
 				changeState(QMPWidget::LoadingState);
-			} else if (line.startsWith("Cache fill: ")) {
+			} else if (line.startsWith("Cache fill:")) {
 				changeState(QMPWidget::BufferingState);
 			} else if (line.startsWith("Starting playback...")) {
 				changeState(QMPWidget::PlayingState);
@@ -219,11 +221,21 @@ QMPWidget::QMPWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	setFocusPolicy(Qt::StrongFocus);
+	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+	m_widget = new QWidget(this);
+	m_widget->setAutoFillBackground(true);
+
+	QPalette p = palette();
+	p.setColor(QPalette::Window, Qt::black);
+	setPalette(p);
 
 	m_process = new QMPProcess(this);
 	connect(m_process, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
 	connect(m_process, SIGNAL(mediaInfoAvailable()), this, SIGNAL(mediaInfoAvailable()));
 	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
+
+	connect(m_process, SIGNAL(mediaInfoAvailable()), this, SLOT(updateWidgetSize()));
 }
 
 /*!
@@ -290,7 +302,7 @@ void QMPWidget::start(const QStringList &args)
 		m_process->quit();
 	}
 
-	m_process->startMPlayer(winId(), args);
+	m_process->startMPlayer(m_widget->winId(), args);
 }
 
 /*!
@@ -322,6 +334,32 @@ void QMPWidget::stop()
 }
 
 /*!
+ * \brief Toggles full-screen mode
+ */
+void QMPWidget::toggleFullScreen()
+{
+	if (!isFullScreen()) {
+		m_windowFlags = windowFlags() & (Qt::Window);
+		m_geometry = geometry();
+		setWindowFlags((windowFlags() | Qt::Window));
+		// From Phonon::VideoWidget
+#ifdef Q_WS_X11
+		show();
+		raise();
+		setWindowState(windowState() | Qt::WindowFullScreen);
+#else
+		setWindowState(windowState() | Qt::WindowFullScreen);
+		show();
+#endif
+	} else {
+		setWindowFlags((windowFlags() ^ (Qt::Window)) | m_windowFlags);
+		setWindowState(windowState() & ~Qt::WindowFullScreen);
+		setGeometry(m_geometry);
+		show();
+	}
+}
+
+/*!
  * \brief Sends a command to the MPlayer process
  * \details
  * Since MPlayer is being run in slave mode, it reads commands from the standard
@@ -346,7 +384,7 @@ void QMPWidget::writeCommand(const QString &command)
  */
 void QMPWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
-	setWindowState(windowState() ^ Qt::WindowFullScreen);
+	toggleFullScreen();
 	event->accept();
 }
 
@@ -370,7 +408,7 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 			break;
 
 		case Qt::Key_F:
-			setWindowState(windowState() ^ Qt::WindowFullScreen);
+			toggleFullScreen();
 			break;
 
 		case Qt::Key_Q:
@@ -426,6 +464,25 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 	event->setAccepted(accept);
 }
 
+void QMPWidget::resizeEvent(QResizeEvent *event)
+{
+	updateWidgetSize();
+}
+
+void QMPWidget::updateWidgetSize()
+{
+	if (m_process->m_mediaInfoAvailable && !m_process->m_mediaInfo.size.isNull()) {
+		QSize mediaSize = m_process->m_mediaInfo.size;
+		QSize widgetSize = size();
+
+		double factor = qMin(double(widgetSize.width()) / mediaSize.width(), double(widgetSize.height()) / mediaSize.height());
+		QRect wrect(0, 0, int(factor * mediaSize.width() + 0.5), int(factor * mediaSize.height()));
+		wrect.moveTopLeft(rect().center() - wrect.center());
+		m_widget->setGeometry(wrect);
+	} else {
+		m_widget->setGeometry(QRect(QPoint(0, 0), size()));
+	}
+}
 
 #include "qmpwidget.moc"
 

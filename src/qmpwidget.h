@@ -83,12 +83,17 @@ class QMPWidget : public QWidget
 		void play();
 		void pause();
 		void stop();
+		void toggleFullScreen();
 
 		void writeCommand(const QString &command);
 
 	protected:
 		virtual void mouseDoubleClickEvent(QMouseEvent *event);
 		virtual void keyPressEvent(QKeyEvent *event);
+		virtual void resizeEvent(QResizeEvent *event);
+
+	private slots:
+		void updateWidgetSize();
 
 	signals:
 		void stateChanged(int state);
@@ -97,6 +102,9 @@ class QMPWidget : public QWidget
 
 	private:
 		QMPProcess *m_process;
+		QWidget *m_widget;
+		Qt::WindowFlags m_windowFlags;
+		QRect m_geometry;
 };
 
 
