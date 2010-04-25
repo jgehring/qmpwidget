@@ -64,6 +64,12 @@ class QMPProcess : public QProcess
 			myargs += "-nokeepaspect";
 			myargs += "-wid";
 			myargs += QString::number(winId);
+#ifdef Q_OS_WIN
+			myargs += "-monitorpixelaspect";
+			myargs += "1";
+			myargs += "-vo";
+			myargs += "directx:noaccel";
+#endif
 			myargs += "-input";
 			myargs += "nodefault-bindings:conf=/dev/null";
 			myargs += args;
@@ -303,7 +309,7 @@ void QMPWidget::start(const QStringList &args)
 		m_process->quit();
 	}
 
-	m_process->startMPlayer(m_widget->winId(), args);
+	m_process->startMPlayer((int)m_widget->winId(), args);
 }
 
 /*!
