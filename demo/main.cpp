@@ -67,7 +67,9 @@ class Player : public QMPWidget
 		void showEvent(QShowEvent *event)
 		{
 			if (!event->spontaneous()) {
-				QMPWidget::start(QApplication::arguments());
+				QStringList args = QApplication::arguments();
+				args.pop_front();
+				QMPWidget::start(args);
 			}
 		}
 };
