@@ -46,13 +46,16 @@ class QMPProcess : public QProcess
 			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer"),
 			  m_mediaInfoAvailable(false)
 		{
+#ifdef Q_WS_WIN
+			m_videoOutput = "directx:noaccel";
+#elif defined(Q_WS_X11)
+			m_videoOutput = "xv";
+#elif defined(Q_WS_MAC)
+			m_videoOutput = "quartz";
+#endif
+
 			connect(this, SIGNAL(readyReadStandardOutput()), this, SLOT(readStdout()));
 			connect(this, SIGNAL(readyReadStandardError()), this, SLOT(readStderr()));
-		}
-
-		void setMPlayerPath(const QString &path)
-		{
-			m_mplayerPath = path;
 		}
 
 		void startMPlayer(int winId, const QStringList &args)
@@ -72,8 +75,12 @@ class QMPProcess : public QProcess
 #endif
 			myargs += "-input";
 			myargs += "nodefault-bindings:conf=/dev/null";
-			myargs += args;
+			if (!m_videoOutput.isEmpty()) {
+				myargs += "-vo";
+				myargs += m_videoOutput;
+			}
 
+			myargs += args;
 			QProcess::start(m_mplayerPath, myargs);
 		}
 
@@ -214,7 +221,10 @@ class QMPProcess : public QProcess
 
 	public:
 		QMPWidget::State m_state;
+
 		QString m_mplayerPath;
+		QString m_videoOutput;
+
 		bool m_mediaInfoAvailable;
 		QMPWidget::MediaInfo m_mediaInfo;
 };
@@ -274,6 +284,17 @@ QMPWidget::MediaInfo QMPWidget::mediaInfo() const
 	return m_process->m_mediaInfo;
 }
 
+void QMPWidget::setVideoOutput(const QString &output)
+{
+	m_process->m_videoOutput = output;
+}
+
+QString QMPWidget::videoOutput() const
+{
+	return m_process->m_videoOutput;
+}
+
+
 /*!
  * \brief Sets the path to the MPlayer executable
  * \details
@@ -285,7 +306,12 @@ QMPWidget::MediaInfo QMPWidget::mediaInfo() const
  */
 void QMPWidget::setMPlayerPath(const QString &path)
 {
-	m_process->setMPlayerPath(path);
+	m_process->m_mplayerPath = path;
+}
+
+QString QMPWidget::mplayerPath() const
+{
+	return m_process->m_mplayerPath;
 }
 
 QSize QMPWidget::sizeHint() const

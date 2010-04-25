@@ -74,7 +74,11 @@ class QMPWidget : public QWidget
 		State state() const;
 		MediaInfo mediaInfo() const;
 
+		void setVideoOutput(const QString &output);
+		QString videoOutput() const;
+
 		void setMPlayerPath(const QString &path);
+		QString mplayerPath() const;
 
 		virtual QSize sizeHint() const;
 
