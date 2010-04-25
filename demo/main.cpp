@@ -43,23 +43,19 @@ class Player : public QMPWidget
 	public:
 		Player() : QMPWidget()
 		{
-			connect(this, SIGNAL(mediaInfoAvailable()), this, SLOT(readMediaInfo()));
 			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
 		}
 
 	private slots:
-		void readMediaInfo()
-		{
-			if (!mediaInfo().size.isNull() && size() != mediaInfo().size) {
-				resize(mediaInfo().size.width(), mediaInfo().size.height());
-			}
-		}
-
 		void stateChanged(int state)
 		{
 			if (state == QMPWidget::NotStartedState)
 			{
 				close();
+			}
+			else if (state == QMPWidget::PlayingState)
+			{
+				resize(mediaInfo().size.width(), mediaInfo().size.height());
 			}
 		}
 

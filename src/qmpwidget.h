@@ -55,16 +55,15 @@ class QMPWidget : public QWidget
 		};
 
 		struct MediaInfo {
-			QString videoCodec;
+			QString videoFormat;
+			int videoBitrate;
 			QSize size;
-			double fps;
-			int bpp;
-			double videoBitrate;
+			double framesPerSecond;
 
-			QString audioCodec;
-			int sampleRate;
-			int channels;
+			QString audioFormat;
 			double audioBitrate;
+			int sampleRate;
+			int numChannels;
 		};
 
 	public:
@@ -101,7 +100,6 @@ class QMPWidget : public QWidget
 
 	signals:
 		void stateChanged(int state);
-		void mediaInfoAvailable();
 		void error(const QString &reason);
 
 	private:

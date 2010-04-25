@@ -43,8 +43,7 @@ class QMPProcess : public QProcess
 
 	public:
 		QMPProcess(QObject *parent = 0)
-			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer"),
-			  m_mediaInfoAvailable(false)
+			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer")
 		{
 #ifdef Q_WS_WIN
 			m_videoOutput = "directx:noaccel";
@@ -63,6 +62,7 @@ class QMPProcess : public QProcess
 			QStringList myargs;
 			myargs += "-slave";
 			myargs += "-noquiet";
+			myargs += "-identify";
 			myargs += "-nomouseinput";
 			myargs += "-nokeepaspect";
 			myargs += "-wid";
@@ -108,7 +108,6 @@ class QMPProcess : public QProcess
 
 	signals:
 		void stateChanged(int state);
-		void mediaInfoAvailable();
 		void error(const QString &reason);
 
 	private slots:
@@ -141,53 +140,40 @@ class QMPProcess : public QProcess
 				changeState(QMPWidget::PlayingState);
 			} else if (line.startsWith("File not found: ")) {
 				changeState(QMPWidget::ErrorState);
-			} else if (line.startsWith("VIDEO:")) {
-				parseVideoInfo(line);
-			} else if (line.startsWith("AUDIO:")) {
-				parseAudioInfo(line);
+			} else if (line.startsWith("ID_VIDEO_") || line.startsWith("ID_AUDIO_")) {
+				parseMediaInfo(line);
 			} else if (line.startsWith("Exiting...")) {
 				changeState(QMPWidget::NotStartedState);
 			}
 		}
 
-		void parseVideoInfo(const QString &line)
+		void parseMediaInfo(const QString &line)
 		{
-			QStringList info = line.split(" ", QString::SkipEmptyParts);
-			for (int i = 0; i < info.count(); i++) {
-				if (info[i].startsWith("[")) {
-					m_mediaInfo.videoCodec = info[i].mid(1, info[i].length()-2);
-				} else if (info[i].split("x").count() == 2) {
-					QStringList l = info[i].split("x");
-					m_mediaInfo.size.setWidth(l[0].toInt());
-					m_mediaInfo.size.setHeight(l[1].toInt());
-				} else if (info[i].endsWith("bpp")) {
-					m_mediaInfo.bpp = info[i].toInt();
-				} else if (info[i] == "fps" && i > 0) {
-					m_mediaInfo.fps = info[i-1].toDouble();
-				} else if (info[i] == "kbps" && i > 0) {
-					m_mediaInfo.videoBitrate = info[i-1].toDouble();
-				}
+			QStringList info = line.split("=");
+			if (info.count() < 2) {
+				return;
 			}
 
-			m_mediaInfoAvailable = true;
-			emit mediaInfoAvailable();
-		}
+			if (info[0] == "ID_VIDEO_FORMAT") {
+				m_mediaInfo.videoFormat = info[1];
+			} else if (info[0] == "ID_VIDEO_BITRATE") {
+				m_mediaInfo.videoBitrate = info[1].toInt();
+			} else if (info[0] == "ID_VIDEO_WIDTH") {
+				m_mediaInfo.size.setWidth(info[1].toInt());
+			} else if (info[0] == "ID_VIDEO_HEIGHT") {
+				m_mediaInfo.size.setHeight(info[1].toInt());
+			} else if (info[0] == "ID_VIDEO_FPS") {
+				m_mediaInfo.framesPerSecond = info[1].toDouble();
 
-		void parseAudioInfo(const QString &line)
-		{
-			QStringList info = line.split(" ", QString::SkipEmptyParts);
-			for (int i = 0; i < info.count(); i++) {
-				if (info[i] == "Hz," && i > 0) {
-					m_mediaInfo.sampleRate = info[i-1].toInt();
-				} else if (info[i] == "ch," && i > 0) {
-					m_mediaInfo.channels = info[i-1].toInt();
-				} else if (info[i].startsWith("kbit") && i > 0) {
-					m_mediaInfo.audioBitrate = info[i-1].toDouble();
-				}
+			} else if (info[0] == "ID_AUDIO_FORMAT") {
+				m_mediaInfo.audioFormat = info[1];
+			} else if (info[0] == "ID_AUDIO_BITRATE") {
+				m_mediaInfo.audioBitrate = info[1].toInt();
+			} else if (info[0] == "ID_AUDIO_RATE") {
+				m_mediaInfo.sampleRate = info[1].toInt();
+			} else if (info[0] == "ID_AUDIO_NCH") {
+				m_mediaInfo.numChannels = info[1].toInt();
 			}
-
-			m_mediaInfoAvailable = true;
-			emit mediaInfoAvailable();
 		}
 
 	private:
@@ -199,19 +185,15 @@ class QMPProcess : public QProcess
 
 			switch (m_state) {
 				case QMPWidget::NotStartedState:
-					m_mediaInfoAvailable = false;
+					m_mediaInfo = QMPWidget::MediaInfo();
 					break;
 
 				case QMPWidget::ErrorState:
 					emit error(comment);
-					m_mediaInfoAvailable = false;
+					m_mediaInfo = QMPWidget::MediaInfo();
 					break;
 
 				default: break;
-			}
-
-			if (!m_mediaInfoAvailable) {
-				m_mediaInfo = QMPWidget::MediaInfo();
 			}
 		}
 
@@ -221,7 +203,6 @@ class QMPProcess : public QProcess
 		QString m_mplayerPath;
 		QString m_videoOutput;
 
-		bool m_mediaInfoAvailable;
 		QMPWidget::MediaInfo m_mediaInfo;
 };
 
@@ -245,10 +226,9 @@ QMPWidget::QMPWidget(QWidget *parent)
 
 	m_process = new QMPProcess(this);
 	connect(m_process, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
-	connect(m_process, SIGNAL(mediaInfoAvailable()), this, SIGNAL(mediaInfoAvailable()));
 	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
 
-	connect(m_process, SIGNAL(mediaInfoAvailable()), this, SLOT(updateWidgetSize()));
+	connect(m_process, SIGNAL(stateChanged(int)), this, SLOT(updateWidgetSize()));
 }
 
 /*!
@@ -312,7 +292,7 @@ QString QMPWidget::mplayerPath() const
 
 QSize QMPWidget::sizeHint() const
 {
-	if (m_process->m_mediaInfoAvailable) {
+	if (!m_process->m_mediaInfo.size.isNull()) {
 		return m_process->m_mediaInfo.size;
 	}
 	return QWidget::sizeHint();
@@ -501,7 +481,7 @@ void QMPWidget::resizeEvent(QResizeEvent *event)
 
 void QMPWidget::updateWidgetSize()
 {
-	if (m_process->m_mediaInfoAvailable && !m_process->m_mediaInfo.size.isNull()) {
+	if (!m_process->m_mediaInfo.size.isNull()) {
 		QSize mediaSize = m_process->m_mediaInfo.size;
 		QSize widgetSize = size();
 
