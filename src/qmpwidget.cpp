@@ -67,12 +67,8 @@ class QMPProcess : public QProcess
 			myargs += "-nokeepaspect";
 			myargs += "-wid";
 			myargs += QString::number(winId);
-#ifdef Q_OS_WIN
 			myargs += "-monitorpixelaspect";
 			myargs += "1";
-			myargs += "-vo";
-			myargs += "directx:noaccel";
-#endif
 			myargs += "-input";
 			myargs += "nodefault-bindings:conf=/dev/null";
 			if (!m_videoOutput.isEmpty()) {
