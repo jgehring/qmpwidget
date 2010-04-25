@@ -44,6 +44,10 @@ class QMPWidget : public QWidget
 
 		void writeCommand(const QString &command);
 
+	protected:
+		virtual void mouseDoubleClickEvent(QMouseEvent *event);
+		virtual void keyPressEvent(QKeyEvent *event);
+
 	signals:
 		void stateChanged(int state);
 		void error(const QString &reason);

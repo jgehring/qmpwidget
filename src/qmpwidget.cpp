@@ -126,12 +126,6 @@ class QMPProcess : public QProcess
 
 
 /*!
- * \class QMPWidget
- * \brief A Qt widget for embedding MPlayer
- */
-
-
-/*!
  * \brief Constructor
  */
 QMPWidget::QMPWidget(QWidget *parent)
@@ -214,14 +208,14 @@ void QMPWidget::stop()
 
 /*!
  * \brief Sends a command to the MPlayer process
- * \details 
+ * \details
  * Since MPlayer is being run in slave mode, it reads commands from the standard
- * input. It is assumed that the interface provided with this class might not be
+ * input. It is assumed that the interface provided by this class might not be
  * sufficient for some situations, so you can use this functions to directly
- * control the MPlayer process. 
+ * control the MPlayer process.
  *
  * For a complete list of commands for MPlayer's slave mode, see
- * http://www.mplayerhq.hu/DOCS/tech/slave.txt
+ * http://www.mplayerhq.hu/DOCS/tech/slave.txt .
  *
  * \param command The command line. A newline character will be added internally.
  */
@@ -230,5 +224,214 @@ void QMPWidget::writeCommand(const QString &command)
 	m_process->writeCommand(command);
 }
 
+/*!
+ * \brief Mouse double click event handler
+ * \details
+ * This implementation will toggle full screen and accept the event
+ */
+void QMPWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+	setWindowState(windowState() ^ Qt::WindowFullScreen);
+	event->accept();
+}
+
+/*!
+ * \brief Keyboard press event handler
+ * \details
+ * This implementation tries to resemble the classic MPlayer interface. For a
+ * full list of supported key codes, see \ref shortcuts.
+ */
+void QMPWidget::keyPressEvent(QKeyEvent *event)
+{
+	bool accept = true;
+	switch (event->key()) {
+		case Qt::Key_P:
+		case Qt::Key_Space:
+			if (state() == PlayingState) {
+				pause();
+			} else if (state() == PausedState) {
+				play();
+			}
+			break;
+
+		case Qt::Key_F:
+			setWindowState(windowState() ^ Qt::WindowFullScreen);
+			break;
+
+		case Qt::Key_Q:
+		case Qt::Key_Escape:
+			close();
+			break;
+
+		case Qt::Key_Plus:
+			writeCommand("audio_delay 0.1");
+			break;
+		case Qt::Key_Minus:
+			writeCommand("audio_delay -0.1");
+			break;
+
+		case Qt::Key_Left:
+			writeCommand("seek -10");
+			break;
+		case Qt::Key_Right:
+			writeCommand("seek 10");
+			break;
+		case Qt::Key_Down:
+			writeCommand("seek -60");
+			break;
+		case Qt::Key_Up:
+			writeCommand("seek 60");
+			break;
+		case Qt::Key_PageDown:
+			writeCommand("seek -600");
+			break;
+		case Qt::Key_PageUp:
+			writeCommand("seek 600");
+			break;
+
+		case Qt::Key_Asterisk:
+			writeCommand("volume 10");
+			break;
+		case Qt::Key_Slash:
+			writeCommand("volume -10");
+			break;
+
+		case Qt::Key_X:
+			writeCommand("sub_delay 0.1");
+			break;
+		case Qt::Key_Z:
+			writeCommand("sub_delay -0.1");
+			break;
+
+		default:
+			accept = false;
+			break;
+	}
+
+	event->setAccepted(accept);
+}
+
 
 #include "qmpwidget.moc"
+
+
+/* Documentation follows */
+
+/*!
+ * \class QMPWidget
+ * \brief A Qt widget for embedding MPlayer
+ *
+ * \section shortcuts Keyboard control
+ * The following keyboard shortcuts are implemented. A table listing the
+ * corresponding key codes can be found at the
+ * <a href="http://doc.trolltech.com/qt.html#Key-enum">Qt documentation</a>.
+ *
+ * <table>
+ *  <tr><th>Key(s)</th><th>Action</th></tr>
+ *  <tr>
+ *   <td>\p Qt::Key_P, \p Qt::Key_Space</td>
+ *   <td>Toggle pause</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_F</td>
+ *   <td>Toggle fullscreen</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_Q, \p Qt::Key_Escape</td>
+ *   <td>Close the widget</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_Plus, \p Qt::Key_Minus</td>
+ *   <td>Adjust audio delay by +/- 0.1 seconds</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_Left, \p Qt::Key_Right</td>
+ *   <td>Seek backward/forward 10 seconds</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_Down, \p Qt::Key_Up</td>
+ *   <td>Seek backward/forward 1 minute</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_PageDown, \p Qt::Key_PageUp</td>
+ *   <td>Seek backward/forward 10 minutes</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_Asterisk, \p Qt::Key_Slash</td>
+ *   <td>Increase or decrease PCM volume</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p Qt::Key_X, \p Qt::Key_Z</td>
+ *   <td>Adjust subtitle delay by +/- 0.1 seconds</td>
+ *  </tr>
+ * </table>
+ *
+ * \section implementation Implementation details
+ * TODO
+ */
+
+/*!
+ * \enum QMPWidget::State
+ * \brief MPlayer state
+ * \details
+ * This enumeration is somewhat identical to <a href="http://doc.trolltech.com/phonon.html#State-enum">
+ * Phonon's State enum</a>, except that it has an additional
+ * member that is used when the MPlayer process has not been started yet (NotStartedState)
+ *
+ * <table>
+ *  <tr><th>Constant</th><th>Value</th><th>Description</th></tr>
+ *  <tr>
+ *   <td>\p QMPWidget::NotStartedState</td>
+ *   <td>\p -1</td>
+ *   <td>The Mplayer process has not been started yet or has already terminated.</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPWidget::LoadingState</td>
+ *   <td>\p 0</td>
+ *   <td>The MPlayer process has just been started, but playback has not been started yet.</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPWidget::StoppedState</td>
+ *   <td>\p 1</td>
+ *   <td></td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPWidget::PlayingState</td>
+ *   <td>\p 2</td>
+ *   <td></td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPWidget::BufferingState</td>
+ *   <td>\p 3</td>
+ *   <td></td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPWidget::PausedState</td>
+ *   <td>\p 4</td>
+ *   <td></td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPWidget::ErrorState</td>
+ *   <td>\p 5</td>
+ *   <td></td>
+ *  </tr>
+ * </table>
+ */
+
+/*!
+ * \fn void QMPWidget::stateChanged(int state)
+ * \brief Emitted if the state has changed
+ * \details
+ * This signal is emitted when the state of the MPlayer process changes.
+ *
+ * \param state The new state
+ */
+
+/*!
+ * \fn void QMPWidget::error(const QString &reason)
+ * \brief Emitted if the state has changed to QMPWidget::ErrorState
+ * \details
+ * This signal is emitted when the state of the MPlayer process changes to QMPWidget::ErrorState.
+ *
+ * \param reason Textual error description (may be empty)
+ */
