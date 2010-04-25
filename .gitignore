@@ -1,0 +1,4 @@
+*.[oa]
+*~
+Makefile
+moc_*.cpp
