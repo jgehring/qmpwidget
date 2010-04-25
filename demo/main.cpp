@@ -30,6 +30,7 @@
 
 #include <QApplication>
 #include <QShowEvent>
+#include <QtDebug>
 
 #include "qmpwidget.h"
 
@@ -43,6 +44,7 @@ class Player : public QMPWidget
 		Player() : QMPWidget()
 		{
 			connect(this, SIGNAL(mediaInfoAvailable()), this, SLOT(readMediaInfo()));
+			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
 		}
 
 	private slots:
@@ -50,6 +52,14 @@ class Player : public QMPWidget
 		{
 			if (!mediaInfo().size.isNull() && size() != mediaInfo().size) {
 				resize(mediaInfo().size.width(), mediaInfo().size.height());
+			}
+		}
+
+		void stateChanged(int state)
+		{
+			if (state == QMPWidget::NotStartedState)
+			{
+				close();
 			}
 		}
 

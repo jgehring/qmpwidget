@@ -124,6 +124,8 @@ class QMPProcess : public QProcess
 		{
 			if (line.startsWith("Playing ")) {
 				changeState(QMPWidget::LoadingState);
+			} else if (line.startsWith("Cache fill: ")) {
+				changeState(QMPWidget::BufferingState);
 			} else if (line.startsWith("Starting playback...")) {
 				changeState(QMPWidget::PlayingState);
 			} else if (line.startsWith("File not found: ")) {
@@ -132,7 +134,7 @@ class QMPProcess : public QProcess
 				parseVideoInfo(line);
 			} else if (line.startsWith("AUDIO:")) {
 				parseAudioInfo(line);
-			} else if (line == "Exiting... (Quit)") {
+			} else if (line.startsWith("Exiting...")) {
 				changeState(QMPWidget::NotStartedState);
 			}
 		}
