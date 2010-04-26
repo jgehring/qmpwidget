@@ -28,9 +28,10 @@
  */
 
 
-#include <QLocalSocket>
 #include <QDir>
 #include <QKeyEvent>
+#include <QLocalSocket>
+#include <QPainter>
 #include <QProcess>
 #include <QStringList>
 #include <QThread>
@@ -48,37 +49,199 @@
 // YUV pipe reader
 class QMPYuvReader : public QThread
 {
+	Q_OBJECT
+
 	public:
 		QMPYuvReader(QString pipe, QObject *parent = 0)
 			: QThread(parent), m_pipe(pipe)
 		{
-
+			initTables();
 		}
 
 	protected:
-		virtual void run()
+		// Main thread loop
+		void run()
 		{
-			QFile f(m_pipe);
-			f.open(QIODevice::ReadWrite);
-			QLocalSocket s;
-			s.setSocketDescriptor((int)f.handle(), QLocalSocket::ConnectedState, QLocalSocket::ReadWrite);
+			FILE *f = fopen(m_pipe.toLocal8Bit().data(), "rb");
+			if (f == NULL) {
+				return;
+			}
 
-			while (s.isValid()) {
-				s.waitForReadyRead();
-				while (!s.atEnd()) {
-					// TODO: Parse data!
-					char buf[2];
-					s.read(buf, 1);
-					printf("%2X ", (int)buf[0]);
+			// Parse stream header
+			char c;
+			int width, height, fps, t1, t2;
+			int n = fscanf(f, "YUV4MPEG2 W%d H%d F%d:1 I%c A%d:%d", &width, &height, &fps, &c, &t1, &t2);
+			if (n < 3) {
+				return;
+			}
+
+			unsigned char *yuv[3];
+			yuv[0] = new unsigned char[width * height];
+			yuv[1] = new unsigned char[width * height];
+			yuv[2] = new unsigned char[width * height];
+
+			QImage image(width, height, QImage::Format_ARGB32);
+
+			// Read frames
+			const int ysize = width * height;
+			const int csize = width * height / 4;
+			while (true) {
+				fread(yuv[0], 1, 6, f);
+				fread(yuv[0], 1, ysize, f);
+				fread(yuv[1], 1, csize, f);
+				fread(yuv[2], 1, csize, f);
+				supersample(yuv[1], width, height);
+				supersample(yuv[2], width, height);
+				yuvToQImage(yuv, &image, width, height);
+
+				emit imageReady(image);
+			}
+
+			delete[] yuv[0];
+			delete[] yuv[1];
+			delete[] yuv[2];
+			fclose(f);
+		}
+
+		// 420 to 444 supersampling (from mjpegtools)
+		void supersample(unsigned char *buffer, int width, int height)
+		{
+			unsigned char *in, *out0, *out1;
+			in = buffer + (width * height / 4) - 1;
+			out1 = buffer + (width * height) - 1;
+			out0 = out1 - width;
+			for (int y = height - 1; y >= 0; y -= 2) {
+				for (int x = width - 1; x >= 0; x -=2) {
+					unsigned char val = *(in--);
+					*(out1--) = val;
+					*(out1--) = val;
+					*(out0--) = val;
+					*(out0--) = val;
+				}   
+				out0 -= width;
+				out1 -= width;
+			}
+		}
+
+		// Converts YCbCr data to a QImage
+		void yuvToQImage(unsigned char *planes[], QImage *dest, int width, int height)
+		{
+			unsigned char *yptr = planes[0];
+			unsigned char *cbptr = planes[1];
+			unsigned char *crptr = planes[2];
+
+			// This is partly from mjpegtools
+			for (int y = 0; y < height; y++) {
+				QRgb *dptr = (QRgb *)dest->scanLine(y);
+				for (int x = 0; x < width; x++) {
+					*dptr = qRgb(qBound(0, (RGB_Y[*yptr] + R_Cr[*crptr]) >> 18, 255),
+						qBound(0, (RGB_Y[*yptr] + G_Cb[*cbptr]+ G_Cr[*crptr]) >> 18, 255),
+						qBound(0, (RGB_Y[*yptr] + B_Cb[*cbptr]) >> 18, 255));
+					++yptr;
+					++cbptr;
+					++crptr;
+					++dptr;
 				}
 			}
 		}
 
+		// Rounding towards zero
+		inline int zround(double n)
+		{
+			if (n >= 0) {
+				return (int)(n + 0.5);
+			} else {
+				return (int)(n - 0.5);
+			}
+		}
+
+		// Initializes the YCbCr -> RGB conversion tables (again, from mjpegtools)
+		void initTables(void)
+		{
+			/* clip Y values under 16 */
+			for (int i = 0; i < 16; i++) {
+				RGB_Y[i] = zround((1.0 * (double)(16 - 16) * 255.0 / 219.0 * (double)(1<<18)) + (double)(1<<(18-1)));
+			}
+			for (int i = 16; i < 236; i++) {
+				RGB_Y[i] = zround((1.0 * (double)(i - 16) * 255.0 / 219.0 * (double)(1<<18)) + (double)(1<<(18-1)));
+			}
+			/* clip Y values above 235 */
+			for (int i = 236; i < 256; i++) {
+				RGB_Y[i] = zround((1.0 * (double)(235 - 16)  * 255.0 / 219.0 * (double)(1<<18)) + (double)(1<<(18-1)));
+			}
+
+			/* clip Cb/Cr values below 16 */   
+			for (int i = 0; i < 16; i++) {
+				R_Cr[i] = zround(1.402 * (double)(-112) * 255.0 / 224.0 * (double)(1<<18));
+				G_Cr[i] = zround(-0.714136 * (double)(-112) * 255.0 / 224.0 * (double)(1<<18));
+				G_Cb[i] = zround(-0.344136 * (double)(-112) * 255.0 / 224.0 * (double)(1<<18));
+				B_Cb[i] = zround(1.772 * (double)(-112) * 255.0 / 224.0 * (double)(1<<18));
+			}
+			for (int i = 16; i < 241; i++) {
+				R_Cr[i] = zround(1.402 * (double)(i - 128) * 255.0 / 224.0 * (double)(1<<18));
+				G_Cr[i] = zround(-0.714136 * (double)(i - 128) * 255.0 / 224.0 * (double)(1<<18));
+				G_Cb[i] = zround(-0.344136 * (double)(i - 128) * 255.0 / 224.0 * (double)(1<<18));
+				B_Cb[i] = zround(1.772 * (double)(i - 128) * 255.0 / 224.0 * (double)(1<<18));
+			}
+			/* clip Cb/Cr values above 240 */  
+			for (int i = 241; i < 256; i++) {
+				R_Cr[i] = zround(1.402 * (double)(112) * 255.0 / 224.0 * (double)(1<<18));
+				G_Cr[i] = zround(-0.714136 * (double)(112) * 255.0 / 224.0 * (double)(1<<18));
+				G_Cb[i] = zround(-0.344136 * (double)(i - 128) * 255.0 / 224.0 * (double)(1<<18));
+				B_Cb[i] = zround(1.772 * (double)(112) * 255.0 / 224.0 * (double)(1<<18));
+			}
+		}
+
+	signals:
+		void imageReady(const QImage &image);
+
 	private:
 		QString m_pipe;
+
+		// Conversion tables
+		int RGB_Y[256];
+		int R_Cr[256];
+		int G_Cb[256];
+		int G_Cr[256];
+		int B_Cb[256];
 };
 
 #endif
+
+
+// The video widget
+class QMPVideoWidget : public QWidget
+{
+	Q_OBJECT
+
+	public:
+		QMPVideoWidget(QWidget *parent = 0)
+			: QWidget(parent)
+		{
+			setAutoFillBackground(true);
+			setAttribute(Qt::WA_NoSystemBackground);
+			setMouseTracking(true);
+		}
+
+	public slots:
+		void displayImage(const QImage &image)
+		{
+			m_image = image.scaled(width(), height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+			update();
+		}
+
+	protected:
+		void paintEvent(QPaintEvent *event)
+		{
+			Q_UNUSED(event);
+			QPainter p(this);
+			p.drawImage(rect(), m_image);
+			p.end();
+		}
+
+	private:
+		QImage m_image;
+};
 
 
 // A custom QProcess designed for the MPlayer slave interface
@@ -111,7 +274,7 @@ class QMPProcess : public QProcess
 #endif
 		}
 
-		void startMPlayer(int winId, const QStringList &args)
+		void startMPlayer(QMPWidget *widget, const QStringList &args)
 		{
 #ifdef USE_YUVPIPE
 			// TODO: Generate a random name!
@@ -124,8 +287,10 @@ class QMPProcess : public QProcess
 			myargs += "-identify";
 			myargs += "-nomouseinput";
 			myargs += "-nokeepaspect";
+#ifndef USE_YUVPIPE
 			myargs += "-wid";
-			myargs += QString::number(winId);
+			myargs += QString::number((int)widget->winId());
+#endif
 			myargs += "-monitorpixelaspect";
 			myargs += "1";
 			myargs += "-input";
@@ -146,6 +311,7 @@ class QMPProcess : public QProcess
 
 #ifdef USE_YUVPIPE
 			QMPYuvReader *yr = new QMPYuvReader(m_pipe, this);
+			connect(yr, SIGNAL(imageReady(const QImage &)), widget, SLOT(displayImage(const QImage &)));
 			yr->start();
 #endif
 		}
@@ -289,9 +455,7 @@ QMPWidget::QMPWidget(QWidget *parent)
 	setFocusPolicy(Qt::StrongFocus);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-	m_widget = new QWidget(this);
-	m_widget->setAutoFillBackground(true);
-	m_widget->setMouseTracking(true);
+	m_widget = new QMPVideoWidget(this);
 
 	QPalette p = palette();
 	p.setColor(QPalette::Window, Qt::black);
@@ -384,7 +548,7 @@ void QMPWidget::start(const QStringList &args)
 		m_process->quit();
 	}
 
-	m_process->startMPlayer((int)m_widget->winId(), args);
+	m_process->startMPlayer((QMPWidget *)m_widget, args);
 }
 
 /*!
