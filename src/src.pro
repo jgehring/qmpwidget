@@ -7,6 +7,8 @@ TEMPLATE = lib
 DESTDIR = ..
 TARGET = qmpwidget
 
+QT += network
+
 CONFIG += staticlib
 
 include(src.pri)

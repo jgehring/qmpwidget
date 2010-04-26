@@ -7,6 +7,8 @@ TEMPLATE = app
 TARGET = qmpdemo
 DESTDIR = ..
 
+QT += network
+
 INCLUDEPATH += ../src
 LIBPATH += ..
 LIBS += -lqmpwidget

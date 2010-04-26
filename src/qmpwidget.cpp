@@ -28,12 +28,57 @@
  */
 
 
+#include <QLocalSocket>
+#include <QDir>
 #include <QKeyEvent>
 #include <QProcess>
 #include <QStringList>
+#include <QThread>
 #include <QtDebug>
 
+#include <sys/stat.h>
+
 #include "qmpwidget.h"
+
+#define USE_YUVPIPE
+
+
+#ifdef USE_YUVPIPE
+
+// YUV pipe reader
+class QMPYuvReader : public QThread
+{
+	public:
+		QMPYuvReader(QString pipe, QObject *parent = 0)
+			: QThread(parent), m_pipe(pipe)
+		{
+
+		}
+
+	protected:
+		virtual void run()
+		{
+			QFile f(m_pipe);
+			f.open(QIODevice::ReadWrite);
+			QLocalSocket s;
+			s.setSocketDescriptor((int)f.handle(), QLocalSocket::ConnectedState, QLocalSocket::ReadWrite);
+
+			while (s.isValid()) {
+				s.waitForReadyRead();
+				while (!s.atEnd()) {
+					// TODO: Parse data!
+					char buf[2];
+					s.read(buf, 1);
+					printf("%2X ", (int)buf[0]);
+				}
+			}
+		}
+
+	private:
+		QString m_pipe;
+};
+
+#endif
 
 
 // A custom QProcess designed for the MPlayer slave interface
@@ -57,8 +102,22 @@ class QMPProcess : public QProcess
 			connect(this, SIGNAL(readyReadStandardError()), this, SLOT(readStderr()));
 		}
 
+		~QMPProcess()
+		{
+#ifdef USE_YUVPIPE
+			if (m_pipe >= 0) {
+				QFile::remove(m_pipe);
+			}
+#endif
+		}
+
 		void startMPlayer(int winId, const QStringList &args)
 		{
+#ifdef USE_YUVPIPE
+			// TODO: Generate a random name!
+			m_pipe = QDir::tempPath()+"/qmpipe";
+			mkfifo(m_pipe.toLocal8Bit().data(), 0600);
+#endif
 			QStringList myargs;
 			myargs += "-slave";
 			myargs += "-noquiet";
@@ -71,13 +130,24 @@ class QMPProcess : public QProcess
 			myargs += "1";
 			myargs += "-input";
 			myargs += "nodefault-bindings:conf=/dev/null";
+#ifdef USE_YUVPIPE
+			myargs += "-vo";
+			myargs += QString("yuv4mpeg:file=%1").arg(m_pipe);
+#else
 			if (!m_videoOutput.isEmpty()) {
 				myargs += "-vo";
 				myargs += m_videoOutput;
 			}
-
+#endif
 			myargs += args;
+
+			qDebug() << myargs;
 			QProcess::start(m_mplayerPath, myargs);
+
+#ifdef USE_YUVPIPE
+			QMPYuvReader *yr = new QMPYuvReader(m_pipe, this);
+			yr->start();
+#endif
 		}
 
 		QProcess::ProcessState processState() const
@@ -202,6 +272,9 @@ class QMPProcess : public QProcess
 
 		QString m_mplayerPath;
 		QString m_videoOutput;
+#ifdef USE_YUVPIPE
+		QString m_pipe;
+#endif
 
 		QMPWidget::MediaInfo m_mediaInfo;
 };
