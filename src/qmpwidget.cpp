@@ -44,10 +44,6 @@
 
 #include "qmpwidget.h"
 
-#define USE_YUVPIPE
-
-
-#ifdef USE_YUVPIPE
 
 // YUV pipe reader
 class QMPYuvReader : public QThread
@@ -75,6 +71,7 @@ class QMPYuvReader : public QThread
 			int width, height, fps, t1, t2;
 			int n = fscanf(f, "YUV4MPEG2 W%d H%d F%d:1 I%c A%d:%d", &width, &height, &fps, &c, &t1, &t2);
 			if (n < 3) {
+				fclose(f);
 				return;
 			}
 
@@ -209,8 +206,6 @@ class QMPYuvReader : public QThread
 		int B_Cb[256];
 };
 
-#endif
-
 
 // A plain video widget
 class QMPPlainVideoWidget : public QWidget
@@ -323,11 +318,22 @@ class QMPProcess : public QProcess
 			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer")
 		{
 #ifdef Q_WS_WIN
-			m_videoOutput = "directx:noaccel";
+			m_mode = QMPWidget::EmbeddedMode;
+			m_videoOutput = "directx,directx:noaccel";
 #elif defined(Q_WS_X11)
+			m_mode = QMPWidget::EmbeddedMode;
+ #ifdef QT_OPENGL_LIB
+			m_videoOutput = "gl2,gl,xv";
+ #else
 			m_videoOutput = "xv";
+ #endif
 #elif defined(Q_WS_MAC)
+			m_mode = QMPWidget::PipeMode;
+ #ifdef QT_OPENGL_LIB
+			m_videoOutput = "gl,quartz";
+ #else
 			m_videoOutput = "quartz";
+ #endif
 #endif
 
 			connect(this, SIGNAL(readyReadStandardOutput()), this, SLOT(readStdout()));
@@ -336,53 +342,49 @@ class QMPProcess : public QProcess
 
 		~QMPProcess()
 		{
-#ifdef USE_YUVPIPE
-			if (m_pipe >= 0) {
+			if (!m_pipe.isEmpty()) {
 				QFile::remove(m_pipe);
 			}
-#endif
 		}
 
 		void startMPlayer(QWidget *widget, const QStringList &args)
 		{
-#ifdef USE_YUVPIPE
-			// TODO: Generate a random name!
-			m_pipe = QDir::tempPath()+"/qmpipe";
-			mkfifo(m_pipe.toLocal8Bit().data(), 0600);
-#endif
+			if (m_mode == QMPWidget::PipeMode) {
+				m_pipe = QDir::tempPath()+"/qmpipe"; // TODO: Make this name random
+				mkfifo(m_pipe.toLocal8Bit().data(), 0600);
+			}
+
 			QStringList myargs;
 			myargs += "-slave";
 			myargs += "-noquiet";
 			myargs += "-identify";
 			myargs += "-nomouseinput";
 			myargs += "-nokeepaspect";
-#ifndef USE_YUVPIPE
-			myargs += "-wid";
-			myargs += QString::number((int)widget->winId());
-#endif
 			myargs += "-monitorpixelaspect";
 			myargs += "1";
 			myargs += "-input";
 			myargs += "nodefault-bindings:conf=/dev/null";
-#ifdef USE_YUVPIPE
-			myargs += "-vo";
-			myargs += QString("yuv4mpeg:file=%1").arg(m_pipe);
-#else
-			if (!m_videoOutput.isEmpty()) {
-				myargs += "-vo";
-				myargs += m_videoOutput;
-			}
-#endif
-			myargs += args;
 
-			qDebug() << myargs;
+			if (m_mode == QMPWidget::EmbeddedMode) {
+				myargs += "-wid";
+				myargs += QString::number((int)widget->winId());
+				if (!m_videoOutput.isEmpty()) {
+					myargs += "-vo";
+					myargs += m_videoOutput;
+				}
+			} else {
+				myargs += "-vo";
+				myargs += QString("yuv4mpeg:file=%1").arg(m_pipe);
+			}
+
+			myargs += args;
 			QProcess::start(m_mplayerPath, myargs);
 
-#ifdef USE_YUVPIPE
-			QMPYuvReader *yr = new QMPYuvReader(m_pipe, this);
-			connect(yr, SIGNAL(imageReady(const QImage &)), widget, SLOT(displayImage(const QImage &)));
-			yr->start();
-#endif
+			if (m_mode == QMPWidget::PipeMode) {
+				QMPYuvReader *yr = new QMPYuvReader(m_pipe, this);
+				connect(yr, SIGNAL(imageReady(const QImage &)), widget, SLOT(displayImage(const QImage &)));
+				yr->start();
+			}
 		}
 
 		QProcess::ProcessState processState() const
@@ -507,9 +509,8 @@ class QMPProcess : public QProcess
 
 		QString m_mplayerPath;
 		QString m_videoOutput;
-#ifdef USE_YUVPIPE
 		QString m_pipe;
-#endif
+		QMPWidget::Mode m_mode;
 
 		QMPWidget::MediaInfo m_mediaInfo;
 };
@@ -568,6 +569,16 @@ QMPWidget::State QMPWidget::state() const
 QMPWidget::MediaInfo QMPWidget::mediaInfo() const
 {
 	return m_process->m_mediaInfo;
+}
+
+void QMPWidget::setMode(Mode mode)
+{
+	m_process->m_mode = mode;
+}
+
+QMPWidget::Mode QMPWidget::mode() const
+{
+	return m_process->m_mode;
 }
 
 void QMPWidget::setVideoOutput(const QString &output)

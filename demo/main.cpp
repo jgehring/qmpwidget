@@ -43,6 +43,7 @@ class Player : public QMPWidget
 	public:
 		Player() : QMPWidget()
 		{
+			setMode(QMPWidget::PipeMode);
 			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
 		}
 

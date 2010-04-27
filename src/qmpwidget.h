@@ -66,12 +66,20 @@ class QMPWidget : public QWidget
 			int numChannels;
 		};
 
+		enum Mode {
+			EmbeddedMode,
+			PipeMode
+		};
+
 	public:
 		QMPWidget(QWidget *parent = 0);
 		~QMPWidget();
 
 		State state() const;
 		MediaInfo mediaInfo() const;
+
+		void setMode(Mode mode);
+		Mode mode() const;
 
 		void setVideoOutput(const QString &output);
 		QString videoOutput() const;
