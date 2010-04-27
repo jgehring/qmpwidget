@@ -36,6 +36,9 @@
 #include <QStringList>
 #include <QThread>
 #include <QtDebug>
+#ifdef QT_OPENGL_LIB
+ #include <QGLWidget>
+#endif
 
 #include <sys/stat.h>
 
@@ -209,16 +212,15 @@ class QMPYuvReader : public QThread
 #endif
 
 
-// The video widget
-class QMPVideoWidget : public QWidget
+// A plain video widget
+class QMPPlainVideoWidget : public QWidget
 {
 	Q_OBJECT
 
 	public:
-		QMPVideoWidget(QWidget *parent = 0)
+		QMPPlainVideoWidget(QWidget *parent = 0)
 			: QWidget(parent)
 		{
-			setAutoFillBackground(true);
 			setAttribute(Qt::WA_NoSystemBackground);
 			setMouseTracking(true);
 		}
@@ -226,7 +228,7 @@ class QMPVideoWidget : public QWidget
 	public slots:
 		void displayImage(const QImage &image)
 		{
-			m_image = image.scaled(width(), height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+			m_pixmap = QPixmap::fromImage(image);
 			update();
 		}
 
@@ -235,13 +237,80 @@ class QMPVideoWidget : public QWidget
 		{
 			Q_UNUSED(event);
 			QPainter p(this);
-			p.drawImage(rect(), m_image);
+			p.setCompositionMode(QPainter::CompositionMode_Source);
+			if (!m_pixmap.isNull()) {
+				p.drawPixmap(rect(), m_pixmap);
+			} else {
+				p.fillRect(rect(), Qt::black);
+			}
 			p.end();
 		}
 
 	private:
-		QImage m_image;
+		QPixmap m_pixmap;
 };
+
+
+#ifdef QT_OPENGL_LIB
+
+// A OpenGL video widget
+class QMPOpenGLVideoWidget : public QGLWidget
+{
+	Q_OBJECT
+
+	public:
+		QMPOpenGLVideoWidget(QWidget *parent = 0)
+			: QGLWidget(parent), m_tex(-1)
+		{
+			setMouseTracking(true);
+		}
+
+	public slots:
+		void displayImage(const QImage &image)
+		{
+			makeCurrent();
+			if (m_tex >= 0) {
+				deleteTexture(m_tex);
+			}
+			m_tex = bindTexture(image);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			updateGL();
+		}
+
+	protected:
+		void initializeGL()
+		{
+			glEnable(GL_TEXTURE_2D);
+			glClearColor(0, 0, 0, 0);
+			glClearDepth(1);
+		}
+
+		void resizeGL(int w, int h)
+		{
+			glViewport(0, 0, w, qMax(h, 1));
+		}
+
+		void paintGL()
+		{
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glLoadIdentity();
+			if (m_tex >= 0) {
+				glBindTexture(GL_TEXTURE_2D, m_tex);
+				glBegin(GL_QUADS);
+				glTexCoord2f(0, 0); glVertex2f(-1, -1);
+				glTexCoord2f(1, 0); glVertex2f( 1, -1);
+				glTexCoord2f(1, 1); glVertex2f( 1,  1);
+				glTexCoord2f(0, 1); glVertex2f(-1,  1);
+				glEnd();
+			}
+		}
+
+	private:
+		int m_tex;
+};
+
+#endif // QT_OPENGL_LIB
 
 
 // A custom QProcess designed for the MPlayer slave interface
@@ -274,7 +343,7 @@ class QMPProcess : public QProcess
 #endif
 		}
 
-		void startMPlayer(QMPWidget *widget, const QStringList &args)
+		void startMPlayer(QWidget *widget, const QStringList &args)
 		{
 #ifdef USE_YUVPIPE
 			// TODO: Generate a random name!
@@ -455,7 +524,11 @@ QMPWidget::QMPWidget(QWidget *parent)
 	setFocusPolicy(Qt::StrongFocus);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-	m_widget = new QMPVideoWidget(this);
+#ifdef QT_OPENGL_LIB
+	m_widget = new QMPOpenGLVideoWidget(this);
+#else
+	m_widget = new QMPPlainVideoWidget(this);
+#endif
 
 	QPalette p = palette();
 	p.setColor(QPalette::Window, Qt::black);

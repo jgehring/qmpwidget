@@ -7,7 +7,7 @@ TEMPLATE = lib
 DESTDIR = ..
 TARGET = qmpwidget
 
-QT += network
+QT += network opengl
 
 CONFIG += staticlib
 

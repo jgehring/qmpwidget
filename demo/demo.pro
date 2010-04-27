@@ -7,7 +7,7 @@ TEMPLATE = app
 TARGET = qmpdemo
 DESTDIR = ..
 
-QT += network
+QT += network opengl
 
 INCLUDEPATH += ../src
 LIBPATH += ..
