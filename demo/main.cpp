@@ -43,19 +43,15 @@ class Player : public QMPWidget
 	public:
 		Player() : QMPWidget()
 		{
-			setMode(QMPWidget::PipeMode);
 			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
 		}
 
 	private slots:
 		void stateChanged(int state)
 		{
-			if (state == QMPWidget::NotStartedState)
-			{
+			if (state == QMPWidget::NotStartedState) {
 				close();
-			}
-			else if (state == QMPWidget::PlayingState)
-			{
+			} else if (state == QMPWidget::PlayingState) {
 				resize(mediaInfo().size.width(), mediaInfo().size.height());
 			}
 		}
@@ -63,7 +59,7 @@ class Player : public QMPWidget
 	protected:
 		void showEvent(QShowEvent *event)
 		{
-			if (!event->spontaneous()) {
+			if (!event->spontaneous() && state() == QMPWidget::NotStartedState) {
 				QStringList args = QApplication::arguments();
 				args.pop_front();
 				QMPWidget::start(args);

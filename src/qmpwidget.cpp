@@ -52,9 +52,14 @@ class QMPYuvReader : public QThread
 
 	public:
 		QMPYuvReader(QString pipe, QObject *parent = 0)
-			: QThread(parent), m_pipe(pipe)
+			: QThread(parent), m_pipe(pipe), m_saveme(NULL), m_savemeSize(-1)
 		{
 			initTables();
+		}
+
+		~QMPYuvReader()
+		{
+			delete[] m_saveme;
 		}
 
 	protected:
@@ -106,20 +111,49 @@ class QMPYuvReader : public QThread
 		// 420 to 444 supersampling (from mjpegtools)
 		void supersample(unsigned char *buffer, int width, int height)
 		{
-			unsigned char *in, *out0, *out1;
-			in = buffer + (width * height / 4) - 1;
+			unsigned char *inm, *in0, *inp, *out0, *out1;
+			unsigned char cmm, cm0, cmp, c0m, c00, c0p, cpm, cp0, cpp;
+			int x, y;
+
+			if (m_saveme == NULL || width > m_savemeSize) {
+				delete[] m_saveme;
+				m_savemeSize = width;
+				m_saveme = new unsigned char[m_savemeSize];
+			}
+			memcpy(m_saveme, buffer, width);
+
+			in0 = buffer + (width * height / 4) - 2;
+			inm = in0 - width/2;
+			inp = in0 + width/2;
 			out1 = buffer + (width * height) - 1;
 			out0 = out1 - width;
-			for (int y = height - 1; y >= 0; y -= 2) {
-				for (int x = width - 1; x >= 0; x -=2) {
-					unsigned char val = *(in--);
-					*(out1--) = val;
-					*(out1--) = val;
-					*(out0--) = val;
-					*(out0--) = val;
-				}   
-				out0 -= width;
+
+			for (y = height; y > 0; y -= 2) {
+				if (y == 2) {
+					in0 = m_saveme + width/2 - 2;
+					inp = in0 + width/2;
+				}
+				for (x = width; x > 0; x -= 2) {
+					cmm = ((x == 2) || (y == 2)) ? in0[1] : inm[0];
+					cm0 = (y == 2) ? in0[1] : inm[1];
+					cmp = ((x == width) || (y == 2)) ? in0[1] : inm[2];
+					c0m = (x == 2) ? in0[1] : in0[0];
+					c00 = in0[1];
+					c0p = (x == width) ? in0[1] : in0[2];
+					cpm = ((x == 2) || (y == height)) ? in0[1] : inp[0];
+					cp0 = (y == height) ? in0[1] : inp[1];
+					cpp = ((x == width) || (y == height)) ? in0[1] : inp[2];
+					inm--;
+					in0--;
+					inp--;
+
+					*(out1--) = (1*cpp + 3*(cp0+c0p) + 9*c00 + 8) >> 4;
+					*(out1--) = (1*cpm + 3*(cp0+c0m) + 9*c00 + 8) >> 4;
+					*(out0--) = (1*cmp + 3*(cm0+c0p) + 9*c00 + 8) >> 4;
+					*(out0--) = (1*cmm + 3*(cm0+c0m) + 9*c00 + 8) >> 4;
+				}
 				out1 -= width;
+				out0 -= width;
 			}
 		}
 
@@ -204,6 +238,10 @@ class QMPYuvReader : public QThread
 		int G_Cb[256];
 		int G_Cr[256];
 		int B_Cb[256];
+
+		// Temporary buffers
+		unsigned char *m_saveme;
+		int m_savemeSize;
 };
 
 
