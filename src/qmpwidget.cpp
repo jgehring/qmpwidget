@@ -718,14 +718,14 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 
 		case Qt::Key_Q:
 		case Qt::Key_Escape:
-			close();
+			stop();
 			break;
 
-		case Qt::Key_Plus:
-			writeCommand("audio_delay 0.1");
-			break;
 		case Qt::Key_Minus:
 			writeCommand("audio_delay -0.1");
+			break;
+		case Qt::Key_Plus:
+			writeCommand("audio_delay 0.1");
 			break;
 
 		case Qt::Key_Left:

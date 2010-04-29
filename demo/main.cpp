@@ -51,7 +51,7 @@ class Player : public QMPWidget
 		void stateChanged(int state)
 		{
 			if (state == QMPWidget::NotStartedState) {
-				close();
+				QApplication::exit();
 			} else if (state == QMPWidget::PlayingState && mediaInfo().ok) {
 				if (parentWidget()) {
 					parentWidget()->resize(mediaInfo().size.width(), mediaInfo().size.height());
