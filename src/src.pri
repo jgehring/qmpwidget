@@ -8,3 +8,7 @@ HEADERS += \
 
 SOURCES += \
 	qmpwidget.cpp
+
+yuvpipe: {
+DEFINES += QMP_USE_YUVPIPE
+}
