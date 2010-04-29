@@ -28,6 +28,7 @@
  */
 
 
+#include <QAbstractSlider>
 #include <QDir>
 #include <QKeyEvent>
 #include <QLocalSocket>
@@ -355,6 +356,8 @@ class QMPProcess : public QProcess
 		QMPProcess(QObject *parent = 0)
 			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer")
 		{
+			resetValues();
+
 #ifdef Q_WS_WIN
 			m_mode = QMPWidget::EmbeddedMode;
 			m_videoOutput = "directx,directx:noaccel";
@@ -453,6 +456,7 @@ class QMPProcess : public QProcess
 
 	signals:
 		void stateChanged(int state);
+		void streamPositionChanged(double position);
 		void error(const QString &reason);
 
 	private slots:
@@ -482,16 +486,20 @@ class QMPProcess : public QProcess
 			} else if (line.startsWith("Cache fill:")) {
 				changeState(QMPWidget::BufferingState);
 			} else if (line.startsWith("Starting playback...")) {
+				m_mediaInfo.ok = true; // No more info here
 				changeState(QMPWidget::PlayingState);
 			} else if (line.startsWith("File not found: ")) {
 				changeState(QMPWidget::ErrorState);
-			} else if (line.startsWith("ID_VIDEO_") || line.startsWith("ID_AUDIO_")) {
+			} else if (line.startsWith("ID_")) {
 				parseMediaInfo(line);
+			} else if (line.startsWith("A:") || line.startsWith("V:")) {
+				parsePosition(line);
 			} else if (line.startsWith("Exiting...")) {
 				changeState(QMPWidget::NotStartedState);
 			}
 		}
 
+		// Parses MPlayer's media identification output
 		void parseMediaInfo(const QString &line)
 		{
 			QStringList info = line.split("=");
@@ -518,6 +526,30 @@ class QMPProcess : public QProcess
 				m_mediaInfo.sampleRate = info[1].toInt();
 			} else if (info[0] == "ID_AUDIO_NCH") {
 				m_mediaInfo.numChannels = info[1].toInt();
+
+			} else if (info[0] == "ID_LENGTH") {
+				m_mediaInfo.length = info[1].toDouble();
+			} else if (info[0] == "ID_SEEKABLE") {
+				m_mediaInfo.seekable = (bool)info[1].toInt();
+			}
+		}
+
+		// Parsas MPlayer's position output
+		void parsePosition(const QString &line)
+		{
+			static QRegExp rx("[ :]");
+			QStringList info = line.split(rx, QString::SkipEmptyParts);
+
+			double oldpos = m_streamPosition;
+			for (int i = 0; i < info.count(); i++) {
+				if (info[i] == "V" && info.count() > i) {
+					m_streamPosition = info[i+1].toDouble();
+					break;
+				}
+			}
+
+			if (oldpos != m_streamPosition) {
+				emit streamPositionChanged(m_streamPosition);
 			}
 		}
 
@@ -530,16 +562,23 @@ class QMPProcess : public QProcess
 
 			switch (m_state) {
 				case QMPWidget::NotStartedState:
-					m_mediaInfo = QMPWidget::MediaInfo();
+					resetValues();
 					break;
 
 				case QMPWidget::ErrorState:
 					emit error(comment);
-					m_mediaInfo = QMPWidget::MediaInfo();
+					resetValues();
 					break;
 
 				default: break;
 			}
+		}
+
+		// Resets the media info and position values
+		void resetValues()
+		{
+			m_mediaInfo = QMPWidget::MediaInfo();
+			m_streamPosition = -1;
 		}
 
 	public:
@@ -551,14 +590,25 @@ class QMPProcess : public QProcess
 		QMPWidget::Mode m_mode;
 
 		QMPWidget::MediaInfo m_mediaInfo;
+		double m_streamPosition; // This is the video position
 };
+
+
+// Initialize the media info structure
+QMPWidget::MediaInfo::MediaInfo()
+	: videoBitrate(0), framesPerSecond(0), sampleRate(0), numChannels(0),
+	  ok(false), length(0), seekable(false)
+{
+
+}
 
 
 /*!
  * \brief Constructor
+ * \param parm Parent widget
  */
 QMPWidget::QMPWidget(QWidget *parent)
-	: QWidget(parent)
+	: QWidget(parent), m_slider(NULL)
 {
 	setFocusPolicy(Qt::StrongFocus);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -573,11 +623,14 @@ QMPWidget::QMPWidget(QWidget *parent)
 	p.setColor(QPalette::Window, Qt::black);
 	setPalette(p);
 
-	m_process = new QMPProcess(this);
-	connect(m_process, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
-	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
+	m_seekTimer.setInterval(100);
+	m_seekTimer.setSingleShot(true);
+	connect(&m_seekTimer, SIGNAL(timeout()), this, SLOT(delayedSeek()));
 
-	connect(m_process, SIGNAL(stateChanged(int)), this, SLOT(updateWidgetSize()));
+	m_process = new QMPProcess(this);
+	connect(m_process, SIGNAL(stateChanged(int)), this, SLOT(mpStateChanged(int)));
+	connect(m_process, SIGNAL(streamPositionChanged(double)), this, SLOT(mpStreamPositionChanged(double)));
+	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
 }
 
 /*!
@@ -607,6 +660,11 @@ QMPWidget::State QMPWidget::state() const
 QMPWidget::MediaInfo QMPWidget::mediaInfo() const
 {
 	return m_process->m_mediaInfo;
+}
+
+double QMPWidget::tell() const
+{
+	return m_process->m_streamPosition;
 }
 
 void QMPWidget::setMode(Mode mode)
@@ -649,9 +707,27 @@ QString QMPWidget::mplayerPath() const
 	return m_process->m_mplayerPath;
 }
 
+void QMPWidget::setSlider(QAbstractSlider *slider)
+{
+	if (m_slider) {
+		m_slider->disconnect(this);
+		disconnect(m_slider);
+	}
+
+	connect(slider, SIGNAL(valueChanged(int)), this, SLOT(seek(int)));
+
+	if (m_process->m_mediaInfo.ok) {
+		slider->setRange(0, m_process->m_mediaInfo.length);
+	}
+	if (m_process->m_mediaInfo.ok) {
+		slider->setEnabled(m_process->m_mediaInfo.seekable);
+	}
+	m_slider = slider;
+}
+
 QSize QMPWidget::sizeHint() const
 {
-	if (!m_process->m_mediaInfo.size.isNull()) {
+	if (m_process->m_mediaInfo.ok && !m_process->m_mediaInfo.size.isNull()) {
 		return m_process->m_mediaInfo.size;
 	}
 	return QWidget::sizeHint();
@@ -699,6 +775,38 @@ void QMPWidget::pause()
 void QMPWidget::stop()
 {
 	m_process->stop();
+}
+
+
+bool QMPWidget::seek(int offset, int whence)
+{
+	return seek(double(offset), whence);
+}
+
+bool QMPWidget::seek(double offset, int whence)
+{
+	m_seekTimer.stop(); // Cancel all current seek requests
+
+	int mode;
+	switch (whence) {
+		case RelativeSeek:
+			mode = 0;
+			break;
+		case PercentageSeek:
+			mode = 1;
+			break;
+		case AbsoluteSeek:
+			mode = 2;
+			break;
+
+		default:
+			return false;
+	}
+
+	// Schedule seek request
+	m_seekCommand = QString("seek %1 %2").arg(offset).arg(whence);
+	m_seekTimer.start();
+	return true;
 }
 
 /*!
@@ -792,22 +900,22 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 			break;
 
 		case Qt::Key_Left:
-			writeCommand("seek -10");
+			seek(-10, RelativeSeek);
 			break;
 		case Qt::Key_Right:
-			writeCommand("seek 10");
+			seek(10, RelativeSeek);
 			break;
 		case Qt::Key_Down:
-			writeCommand("seek -60");
+			seek(-60, RelativeSeek);
 			break;
 		case Qt::Key_Up:
-			writeCommand("seek 60");
+			seek(60, RelativeSeek);
 			break;
 		case Qt::Key_PageDown:
-			writeCommand("seek -600");
+			seek(-600, RelativeSeek);
 			break;
 		case Qt::Key_PageUp:
-			writeCommand("seek 600");
+			seek(600, RelativeSeek);
 			break;
 
 		case Qt::Key_Asterisk:
@@ -852,6 +960,34 @@ void QMPWidget::updateWidgetSize()
 		m_widget->setGeometry(QRect(QPoint(0, 0), size()));
 	}
 }
+
+void QMPWidget::delayedSeek()
+{
+	if (!m_seekCommand.isEmpty()) {
+		writeCommand(m_seekCommand);
+		m_seekCommand = QString();
+	}
+}
+
+void QMPWidget::mpStateChanged(int state)
+{
+	if (m_slider != NULL && state == PlayingState && m_process->m_mediaInfo.ok) {
+		m_slider->setRange(0, m_process->m_mediaInfo.length);
+		m_slider->setEnabled(m_process->m_mediaInfo.seekable);
+	}
+
+	emit stateChanged(state);
+}
+
+void QMPWidget::mpStreamPositionChanged(double position)
+{
+	if (m_slider != NULL && m_seekCommand.isEmpty() && m_slider->value() != qRound(position)) {
+		m_slider->disconnect(this);
+		m_slider->setValue(qRound(position));
+		connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(seek(int)));
+	}
+}
+
 
 #include "qmpwidget.moc"
 

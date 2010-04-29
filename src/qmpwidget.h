@@ -32,8 +32,11 @@
 #define QMPWIDGET_H_
 
 
+#include <QPointer>
+#include <QTimer>
 #include <QWidget>
 
+class QAbstractSlider;
 class QStringList;
 
 class QMPProcess;
@@ -64,11 +67,23 @@ class QMPWidget : public QWidget
 			double audioBitrate;
 			int sampleRate;
 			int numChannels;
+
+			bool ok;
+			double length;
+			bool seekable;
+
+			MediaInfo();
 		};
 
 		enum Mode {
 			EmbeddedMode,
 			PipeMode
+		};
+
+		enum SeekMode {
+			RelativeSeek = 0,
+			PercentageSeek,
+			AbsoluteSeek
 		};
 
 	public:
@@ -77,6 +92,7 @@ class QMPWidget : public QWidget
 
 		State state() const;
 		MediaInfo mediaInfo() const;
+		double tell() const;
 
 		void setMode(Mode mode);
 		Mode mode() const;
@@ -87,6 +103,8 @@ class QMPWidget : public QWidget
 		void setMPlayerPath(const QString &path);
 		QString mplayerPath() const;
 
+		void setSlider(QAbstractSlider *slider);
+
 		virtual QSize sizeHint() const;
 
 	public slots:
@@ -94,6 +112,9 @@ class QMPWidget : public QWidget
 		void play();
 		void pause();
 		void stop();
+		bool seek(int offset, int whence = AbsoluteSeek);
+		bool seek(double offset, int whence = AbsoluteSeek);
+
 		void toggleFullScreen();
 
 		void writeCommand(const QString &command);
@@ -103,8 +124,13 @@ class QMPWidget : public QWidget
 		virtual void keyPressEvent(QKeyEvent *event);
 		virtual void resizeEvent(QResizeEvent *event);
 
-	private slots:
+	private:
 		void updateWidgetSize();
+
+	private slots:
+		void mpStateChanged(int state);
+		void mpStreamPositionChanged(double position);
+		void delayedSeek();
 
 	signals:
 		void stateChanged(int state);
@@ -113,8 +139,12 @@ class QMPWidget : public QWidget
 	private:
 		QMPProcess *m_process;
 		QWidget *m_widget;
+		QPointer<QAbstractSlider> m_slider;
 		Qt::WindowFlags m_windowFlags;
 		QRect m_geometry;
+
+		QTimer m_seekTimer;
+		QString m_seekCommand;
 };
 
 

@@ -30,7 +30,8 @@
 
 #include <QApplication>
 #include <QShowEvent>
-#include <QtDebug>
+#include <QSlider>
+#include <QVBoxLayout>
 
 #include "qmpwidget.h"
 
@@ -41,7 +42,7 @@ class Player : public QMPWidget
 	Q_OBJECT
 
 	public:
-		Player() : QMPWidget()
+		Player(QWidget *parent = 0) : QMPWidget(parent)
 		{
 			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
 		}
@@ -51,8 +52,12 @@ class Player : public QMPWidget
 		{
 			if (state == QMPWidget::NotStartedState) {
 				close();
-			} else if (state == QMPWidget::PlayingState) {
-				resize(mediaInfo().size.width(), mediaInfo().size.height());
+			} else if (state == QMPWidget::PlayingState && mediaInfo().ok) {
+				if (parentWidget()) {
+					parentWidget()->resize(mediaInfo().size.width(), mediaInfo().size.height());
+				} else {
+					resize(mediaInfo().size.width(), mediaInfo().size.height());
+				}
 			}
 		}
 
@@ -73,8 +78,19 @@ int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
 
-	Player player;
-	player.show();
+	// Construct a simple widget with the player and a correspondig slider
+	QWidget widget;
+
+	QVBoxLayout layout(&widget);
+	widget.setLayout(&layout);
+	QSlider slider(Qt::Horizontal, &widget);
+
+	Player player(&widget);
+	player.setSlider(&slider);
+
+	layout.addWidget(&player);
+	layout.addWidget(&slider);
+	widget.show();
 
 	return app.exec();
 }
