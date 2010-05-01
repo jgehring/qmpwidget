@@ -29,10 +29,12 @@
 
 
 #include <QImage>
+#include <QDir>
 #include <QMutex>
 #include <QThread>
 
 #include <cstdio>
+#include <sys/stat.h>
 
 
 // Internal YUV pipe reader
@@ -42,9 +44,21 @@ class QMPYuvReader : public QThread
 
 	public:
 		// Constructor
-		QMPYuvReader(QString pipe, QObject *parent = 0)
-			: QThread(parent), m_pipe(pipe), m_saveme(NULL), m_savemeSize(-1)
+		QMPYuvReader(QObject *parent = 0)
+			: QThread(parent), m_saveme(NULL), m_savemeSize(-1)
 		{
+			// Create pipe in a temporary directory
+			char temp[12];
+			while (true) {
+				strcpy(temp, "XXXXXX");
+				mkdtemp(temp);
+				strcat(temp, "/fifo");
+				if (mkfifo(temp, 0600) == 0) {
+					break;
+				}
+			}
+			m_pipe = temp;
+
 			initTables();
 		}
 
@@ -52,6 +66,10 @@ class QMPYuvReader : public QThread
 		~QMPYuvReader()
 		{
 			delete[] m_saveme;
+			if (!m_pipe.isEmpty()) {
+				QFile::remove(m_pipe);
+				QDir().rmdir(QFileInfo(m_pipe).dir().path());
+			}
 		}
 
 		// Tells the thread to stop and exit
@@ -237,8 +255,10 @@ class QMPYuvReader : public QThread
 	signals:
 		void imageReady(const QImage &image);
 
-	private:
+	public:
 		QString m_pipe;
+
+	private:
 		QMutex m_mutex;
 		bool m_stop;
 

@@ -29,7 +29,6 @@
 
 
 #include <QAbstractSlider>
-#include <QDir>
 #include <QKeyEvent>
 #include <QLocalSocket>
 #include <QPainter>
@@ -37,19 +36,15 @@
 #include <QStringList>
 #include <QThread>
 #include <QtDebug>
+
 #ifdef QT_OPENGL_LIB
  #include <QGLWidget>
 #endif
 
-#include <sys/stat.h>
-
 #include "qmpwidget.h"
 
-
 #ifdef QMP_USE_YUVPIPE
-
-#include "qmpyuvreader.cpp"
-
+ #include "qmpyuvreader.cpp"
 #endif // QMP_USE_YUVPIPE
 
 
@@ -193,17 +188,20 @@ class QMPProcess : public QProcess
 
 		~QMPProcess()
 		{
-			if (!m_pipe.isEmpty()) {
-				QFile::remove(m_pipe);
+#ifdef QMP_USE_YUVPIPE
+			if (m_yuvReader != NULL) {
+				m_yuvReader->stop();
 			}
+#endif
 		}
 
 		void startMPlayer(QWidget *widget, const QStringList &args)
 		{
 			if (m_mode == QMPWidget::PipeMode) {
 #ifdef QMP_USE_YUVPIPE
-				m_pipe = QDir::tempPath()+"/qmpipe"; // TODO: Make this name random
-				mkfifo(m_pipe.toLocal8Bit().data(), 0600);
+				m_yuvReader = new QMPYuvReader(this);
+#else
+				m_mode = QMPWidget::EmbeddedMode;
 #endif
 			}
 
@@ -226,8 +224,10 @@ class QMPProcess : public QProcess
 					myargs += m_videoOutput;
 				}
 			} else {
+#ifdef QMP_USE_YUVPIPE
 				myargs += "-vo";
-				myargs += QString("yuv4mpeg:file=%1").arg(m_pipe);
+				myargs += QString("yuv4mpeg:file=%1").arg(m_yuvReader->m_pipe);
+#endif
 			}
 
 			myargs += args;
@@ -235,7 +235,6 @@ class QMPProcess : public QProcess
 
 			if (m_mode == QMPWidget::PipeMode) {
 #ifdef QMP_USE_YUVPIPE
-				m_yuvReader = new QMPYuvReader(m_pipe, this);
 				connect(m_yuvReader, SIGNAL(imageReady(const QImage &)), widget, SLOT(displayImage(const QImage &)));
 				m_yuvReader->start();
 #endif
