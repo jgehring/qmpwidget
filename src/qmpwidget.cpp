@@ -344,6 +344,11 @@ class QMPProcess : public QProcess
 				m_mediaInfo.length = info[1].toDouble();
 			} else if (info[0] == "ID_SEEKABLE") {
 				m_mediaInfo.seekable = (bool)info[1].toInt();
+
+			} else if (info[0].startsWith("ID_CLIP_INFO_NAME")) {
+				m_currentTag = info[1];
+			} else if (info[0].startsWith("ID_CLIP_INFO_VALUE") && !m_currentTag.isEmpty()) {
+				m_mediaInfo.tags.insert(m_currentTag, info[1]);
 			}
 		}
 
@@ -411,6 +416,8 @@ class QMPProcess : public QProcess
 
 		QMPWidget::MediaInfo m_mediaInfo;
 		double m_streamPosition; // This is the video position
+
+		QString m_currentTag;
 
 #ifdef QMP_USE_YUVPIPE
 		QMPYuvReader *m_yuvReader;

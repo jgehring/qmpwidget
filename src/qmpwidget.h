@@ -32,6 +32,7 @@
 #define QMPWIDGET_H_
 
 
+#include <QHash>
 #include <QPointer>
 #include <QTimer>
 #include <QWidget>
@@ -67,6 +68,8 @@ class QMPWidget : public QWidget
 			double audioBitrate;
 			int sampleRate;
 			int numChannels;
+
+			QHash<QString, QString> tags;
 
 			bool ok;
 			double length;
