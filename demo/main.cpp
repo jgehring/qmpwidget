@@ -37,12 +37,12 @@
 
 
 // Custom player
-class Player : public QMPWidget
+class Player : public QMPwidget
 {
 	Q_OBJECT
 
 	public:
-		Player(QWidget *parent = 0) : QMPWidget(parent)
+		Player(QWidget *parent = 0) : QMPwidget(parent)
 		{
 			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
 		}
@@ -50,9 +50,9 @@ class Player : public QMPWidget
 	private slots:
 		void stateChanged(int state)
 		{
-			if (state == QMPWidget::NotStartedState) {
+			if (state == QMPwidget::NotStartedState) {
 				QApplication::exit();
-			} else if (state == QMPWidget::PlayingState && mediaInfo().ok) {
+			} else if (state == QMPwidget::PlayingState && mediaInfo().ok) {
 				if (parentWidget()) {
 					parentWidget()->resize(mediaInfo().size.width(), mediaInfo().size.height());
 				} else {
@@ -64,10 +64,10 @@ class Player : public QMPWidget
 	protected:
 		void showEvent(QShowEvent *event)
 		{
-			if (!event->spontaneous() && state() == QMPWidget::NotStartedState) {
+			if (!event->spontaneous() && state() == QMPwidget::NotStartedState) {
 				QStringList args = QApplication::arguments();
 				args.pop_front();
-				QMPWidget::start(args);
+				QMPwidget::start(args);
 			}
 		}
 };

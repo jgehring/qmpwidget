@@ -9,6 +9,6 @@ HEADERS += \
 SOURCES += \
 	qmpwidget.cpp
 
-yuvpipe: {
+pipemode: {
 DEFINES += QMP_USE_YUVPIPE
 }

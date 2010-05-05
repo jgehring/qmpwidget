@@ -1,18 +1,18 @@
 /*
  *  qmpwidget - A Qt widget for embedding MPlayer
  *  Copyright (C) 2010 by Jonas Gehring
- * 	All rights reserved.
+ *  All rights reserved.
  *
- * 	Redistribution and use in source and binary forms, with or without
- * 	modification, are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
  *      * Redistributions of source code must retain the above copyright
- * 	      notice, this list of conditions and the following disclaimer.
- * 	    * Redistributions in binary form must reproduce the above copyright
- * 	      notice, this list of conditions and the following disclaimer in the
- * 	      documentation and/or other materials provided with the distribution.
- * 	    * Neither the name of the copyright holders nor the
- * 	      names of its contributors may be used to endorse or promote products
- * 	      derived from this software without specific prior written permission.
+ *        notice, this list of conditions and the following disclaimer.
+ *      * Redistributions in binary form must reproduce the above copyright
+ *        notice, this list of conditions and the following disclaimer in the
+ *        documentation and/or other materials provided with the distribution.
+ *      * Neither the name of the copyright holders nor the
+ *        names of its contributors may be used to endorse or promote products
+ *        derived from this software without specific prior written permission.
  *
  *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -156,7 +156,7 @@ class QMPProcess : public QProcess
 
 	public:
 		QMPProcess(QObject *parent = 0)
-			: QProcess(parent), m_state(QMPWidget::NotStartedState), m_mplayerPath("mplayer")
+			: QProcess(parent), m_state(QMPwidget::NotStartedState), m_mplayerPath("mplayer")
 #ifdef QMP_USE_YUVPIPE
 			  , m_yuvReader(NULL)
 #endif
@@ -164,17 +164,17 @@ class QMPProcess : public QProcess
 			resetValues();
 
 #ifdef Q_WS_WIN
-			m_mode = QMPWidget::EmbeddedMode;
+			m_mode = QMPwidget::EmbeddedMode;
 			m_videoOutput = "directx,directx:noaccel";
 #elif defined(Q_WS_X11)
-			m_mode = QMPWidget::EmbeddedMode;
+			m_mode = QMPwidget::EmbeddedMode;
  #ifdef QT_OPENGL_LIB
 			m_videoOutput = "gl2,gl,xv";
  #else
 			m_videoOutput = "xv";
  #endif
 #elif defined(Q_WS_MAC)
-			m_mode = QMPWidget::PipeMode;
+			m_mode = QMPwidget::PipeMode;
  #ifdef QT_OPENGL_LIB
 			m_videoOutput = "gl,quartz";
  #else
@@ -197,11 +197,11 @@ class QMPProcess : public QProcess
 
 		void startMPlayer(QWidget *widget, const QStringList &args)
 		{
-			if (m_mode == QMPWidget::PipeMode) {
+			if (m_mode == QMPwidget::PipeMode) {
 #ifdef QMP_USE_YUVPIPE
 				m_yuvReader = new QMPYuvReader(this);
 #else
-				m_mode = QMPWidget::EmbeddedMode;
+				m_mode = QMPwidget::EmbeddedMode;
 #endif
 			}
 
@@ -216,7 +216,7 @@ class QMPProcess : public QProcess
 			myargs += "-input";
 			myargs += "nodefault-bindings:conf=/dev/null";
 
-			if (m_mode == QMPWidget::EmbeddedMode) {
+			if (m_mode == QMPwidget::EmbeddedMode) {
 				myargs += "-wid";
 				myargs += QString::number((int)widget->winId());
 				if (!m_videoOutput.isEmpty()) {
@@ -233,7 +233,7 @@ class QMPProcess : public QProcess
 			myargs += args;
 			QProcess::start(m_mplayerPath, myargs);
 
-			if (m_mode == QMPWidget::PipeMode) {
+			if (m_mode == QMPwidget::PipeMode) {
 #ifdef QMP_USE_YUVPIPE
 				connect(m_yuvReader, SIGNAL(imageReady(const QImage &)), widget, SLOT(displayImage(const QImage &)));
 				m_yuvReader->start();
@@ -295,20 +295,20 @@ class QMPProcess : public QProcess
 		void parseLine(const QString &line)
 		{
 			if (line.startsWith("Playing ")) {
-				changeState(QMPWidget::LoadingState);
+				changeState(QMPwidget::LoadingState);
 			} else if (line.startsWith("Cache fill:")) {
-				changeState(QMPWidget::BufferingState);
+				changeState(QMPwidget::BufferingState);
 			} else if (line.startsWith("Starting playback...")) {
 				m_mediaInfo.ok = true; // No more info here
-				changeState(QMPWidget::PlayingState);
+				changeState(QMPwidget::PlayingState);
 			} else if (line.startsWith("File not found: ")) {
-				changeState(QMPWidget::ErrorState);
+				changeState(QMPwidget::ErrorState);
 			} else if (line.startsWith("ID_")) {
 				parseMediaInfo(line);
 			} else if (line.startsWith("A:") || line.startsWith("V:")) {
 				parsePosition(line);
 			} else if (line.startsWith("Exiting...")) {
-				changeState(QMPWidget::NotStartedState);
+				changeState(QMPwidget::NotStartedState);
 			}
 		}
 
@@ -373,10 +373,10 @@ class QMPProcess : public QProcess
 
 	private:
 		// Changes the current state, possibly emitting multiple signals
-		void changeState(QMPWidget::State state, const QString &comment = QString())
+		void changeState(QMPwidget::State state, const QString &comment = QString())
 		{
 #ifdef QMP_USE_YUVPIPE
-			if (m_yuvReader != NULL && (state == QMPWidget::ErrorState || state == QMPWidget::NotStartedState)) {
+			if (m_yuvReader != NULL && (state == QMPwidget::ErrorState || state == QMPwidget::NotStartedState)) {
 				m_yuvReader->stop();
 				m_yuvReader->deleteLater();
 			}
@@ -386,11 +386,11 @@ class QMPProcess : public QProcess
 			emit stateChanged(m_state);
 
 			switch (m_state) {
-				case QMPWidget::NotStartedState:
+				case QMPwidget::NotStartedState:
 					resetValues();
 					break;
 
-				case QMPWidget::ErrorState:
+				case QMPwidget::ErrorState:
 					emit error(comment);
 					resetValues();
 					break;
@@ -402,19 +402,19 @@ class QMPProcess : public QProcess
 		// Resets the media info and position values
 		void resetValues()
 		{
-			m_mediaInfo = QMPWidget::MediaInfo();
+			m_mediaInfo = QMPwidget::MediaInfo();
 			m_streamPosition = -1;
 		}
 
 	public:
-		QMPWidget::State m_state;
+		QMPwidget::State m_state;
 
 		QString m_mplayerPath;
 		QString m_videoOutput;
 		QString m_pipe;
-		QMPWidget::Mode m_mode;
+		QMPwidget::Mode m_mode;
 
-		QMPWidget::MediaInfo m_mediaInfo;
+		QMPwidget::MediaInfo m_mediaInfo;
 		double m_streamPosition; // This is the video position
 
 		QString m_currentTag;
@@ -426,7 +426,7 @@ class QMPProcess : public QProcess
 
 
 // Initialize the media info structure
-QMPWidget::MediaInfo::MediaInfo()
+QMPwidget::MediaInfo::MediaInfo()
 	: videoBitrate(0), framesPerSecond(0), sampleRate(0), numChannels(0),
 	  ok(false), length(0), seekable(false)
 {
@@ -436,9 +436,9 @@ QMPWidget::MediaInfo::MediaInfo()
 
 /*!
  * \brief Constructor
- * \param parm Parent widget
+ * \param parent Parent widget
  */
-QMPWidget::QMPWidget(QWidget *parent)
+QMPwidget::QMPwidget(QWidget *parent)
 	: QWidget(parent), m_slider(NULL)
 {
 	setFocusPolicy(Qt::StrongFocus);
@@ -470,7 +470,7 @@ QMPWidget::QMPWidget(QWidget *parent)
  * This function will ask the MPlayer process to quit and block until it has really
  * finished.
  */
-QMPWidget::~QMPWidget()
+QMPwidget::~QMPwidget()
 {
 	if (m_process->processState() == QProcess::Running) {
 		m_process->quit();
@@ -480,25 +480,41 @@ QMPWidget::~QMPWidget()
 
 /*!
  * \brief Returns the current MPlayer process state
- *
  * \returns The process state
  */
-QMPWidget::State QMPWidget::state() const
+QMPwidget::State QMPwidget::state() const
 {
 	return m_process->m_state;
 }
 
-QMPWidget::MediaInfo QMPWidget::mediaInfo() const
+/*!
+ * \brief Returns the current media info object 
+ * \details
+ * Please check QMPwidget::MediaInfo::ok to make sure the media
+ * information has been fully parsed.
+ * \returns The media info object
+ */
+QMPwidget::MediaInfo QMPwidget::mediaInfo() const
 {
 	return m_process->m_mediaInfo;
 }
 
-double QMPWidget::tell() const
+/*!
+ * \brief Returns the current playback position
+ * \returns The current playback position in seconds
+ */
+double QMPwidget::tell() const
 {
 	return m_process->m_streamPosition;
 }
 
-void QMPWidget::setMode(Mode mode)
+/*!
+ * \brief Sets the video playback mode
+ * \details
+ * Please see \ref playbackmodes for a discussion of the available modes.
+ * \param Mode The video playback mode
+ */
+void QMPwidget::setMode(Mode mode)
 {
 #ifdef QMP_USE_YUVPIPE
 	m_process->m_mode = mode;
@@ -507,17 +523,21 @@ void QMPWidget::setMode(Mode mode)
 #endif
 }
 
-QMPWidget::Mode QMPWidget::mode() const
+/*!
+ * \brief Returns the current video playback mode
+ * \returns The current video playback mode
+ */
+QMPwidget::Mode QMPwidget::mode() const
 {
 	return m_process->m_mode;
 }
 
-void QMPWidget::setVideoOutput(const QString &output)
+void QMPwidget::setVideoOutput(const QString &output)
 {
 	m_process->m_videoOutput = output;
 }
 
-QString QMPWidget::videoOutput() const
+QString QMPwidget::videoOutput() const
 {
 	return m_process->m_videoOutput;
 }
@@ -532,17 +552,23 @@ QString QMPWidget::videoOutput() const
  *
  * \param path Path to the MPlayer executable
  */
-void QMPWidget::setMPlayerPath(const QString &path)
+void QMPwidget::setMPlayerPath(const QString &path)
 {
 	m_process->m_mplayerPath = path;
 }
 
-QString QMPWidget::mplayerPath() const
+/*!
+ * \brief Returns the current path to the MPlayer executable
+ */
+QString QMPwidget::mplayerPath() const
 {
 	return m_process->m_mplayerPath;
 }
 
-void QMPWidget::setSlider(QAbstractSlider *slider)
+/*!
+ * \brief Sets a seeking slider for this widget
+ */
+void QMPwidget::setSlider(QAbstractSlider *slider)
 {
 	if (m_slider) {
 		m_slider->disconnect(this);
@@ -560,7 +586,12 @@ void QMPWidget::setSlider(QAbstractSlider *slider)
 	m_slider = slider;
 }
 
-QSize QMPWidget::sizeHint() const
+/*!
+ * \brief Returns a suitable size hint for this widget
+ * \details
+ * This function is used internally by Qt.
+ */
+QSize QMPwidget::sizeHint() const
 {
 	if (m_process->m_mediaInfo.ok && !m_process->m_mediaInfo.size.isNull()) {
 		return m_process->m_mediaInfo.size;
@@ -575,19 +606,19 @@ QSize QMPWidget::sizeHint() const
  *
  * \param args MPlayer command line arguments, typically a media file
  */
-void QMPWidget::start(const QStringList &args)
+void QMPwidget::start(const QStringList &args)
 {
 	if (m_process->processState() == QProcess::Running) {
 		m_process->quit();
 	}
 
-	m_process->startMPlayer((QMPWidget *)m_widget, args);
+	m_process->startMPlayer((QMPwidget *)m_widget, args);
 }
 
 /*!
  * \brief Resumes playback
  */
-void QMPWidget::play()
+void QMPwidget::play()
 {
 	if (m_process->m_state == PausedState) {
 		m_process->pause();
@@ -597,7 +628,7 @@ void QMPWidget::play()
 /*!
  * \brief Pauses playback
  */
-void QMPWidget::pause()
+void QMPwidget::pause()
 {
 	if (m_process->m_state == PlayingState) {
 		m_process->pause();
@@ -607,18 +638,31 @@ void QMPWidget::pause()
 /*!
  * \brief Stops playback
  */
-void QMPWidget::stop()
+void QMPwidget::stop()
 {
 	m_process->stop();
 }
 
-
-bool QMPWidget::seek(int offset, int whence)
+/*!
+ * \brief Media playback seeking
+ *
+ * \param offset Seeking offset in seconds
+ * \param whence Seeking mode
+ * \returns \p true If the seeking mode is valid
+ */
+bool QMPwidget::seek(int offset, int whence)
 {
 	return seek(double(offset), whence);
 }
 
-bool QMPWidget::seek(double offset, int whence)
+/*!
+ * \brief Media playback seeking
+ *
+ * \param offset Seeking offset in seconds
+ * \param whence Seeking mode
+ * \returns \p true If the seeking mode is valid
+ */
+bool QMPwidget::seek(double offset, int whence)
 {
 	m_seekTimer.stop(); // Cancel all current seek requests
 
@@ -647,7 +691,7 @@ bool QMPWidget::seek(double offset, int whence)
 /*!
  * \brief Toggles full-screen mode
  */
-void QMPWidget::toggleFullScreen()
+void QMPwidget::toggleFullScreen()
 {
 	if (!isFullScreen()) {
 		m_windowFlags = windowFlags() & (Qt::Window);
@@ -683,7 +727,7 @@ void QMPWidget::toggleFullScreen()
  *
  * \param command The command line. A newline character will be added internally.
  */
-void QMPWidget::writeCommand(const QString &command)
+void QMPwidget::writeCommand(const QString &command)
 {
 	m_process->writeCommand(command);
 }
@@ -693,7 +737,7 @@ void QMPWidget::writeCommand(const QString &command)
  * \details
  * This implementation will toggle full screen and accept the event
  */
-void QMPWidget::mouseDoubleClickEvent(QMouseEvent *event)
+void QMPwidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
 	toggleFullScreen();
 	event->accept();
@@ -705,7 +749,7 @@ void QMPWidget::mouseDoubleClickEvent(QMouseEvent *event)
  * This implementation tries to resemble the classic MPlayer interface. For a
  * full list of supported key codes, see \ref shortcuts.
  */
-void QMPWidget::keyPressEvent(QKeyEvent *event)
+void QMPwidget::keyPressEvent(QKeyEvent *event)
 {
 	bool accept = true;
 	switch (event->key()) {
@@ -775,13 +819,13 @@ void QMPWidget::keyPressEvent(QKeyEvent *event)
 	event->setAccepted(accept);
 }
 
-void QMPWidget::resizeEvent(QResizeEvent *event)
+void QMPwidget::resizeEvent(QResizeEvent *event)
 {
 	Q_UNUSED(event);
 	updateWidgetSize();
 }
 
-void QMPWidget::updateWidgetSize()
+void QMPwidget::updateWidgetSize()
 {
 	if (!m_process->m_mediaInfo.size.isNull()) {
 		QSize mediaSize = m_process->m_mediaInfo.size;
@@ -796,7 +840,7 @@ void QMPWidget::updateWidgetSize()
 	}
 }
 
-void QMPWidget::delayedSeek()
+void QMPwidget::delayedSeek()
 {
 	if (!m_seekCommand.isEmpty()) {
 		writeCommand(m_seekCommand);
@@ -804,7 +848,7 @@ void QMPWidget::delayedSeek()
 	}
 }
 
-void QMPWidget::mpStateChanged(int state)
+void QMPwidget::mpStateChanged(int state)
 {
 	if (m_slider != NULL && state == PlayingState && m_process->m_mediaInfo.ok) {
 		m_slider->setRange(0, m_process->m_mediaInfo.length);
@@ -814,7 +858,7 @@ void QMPWidget::mpStateChanged(int state)
 	emit stateChanged(state);
 }
 
-void QMPWidget::mpStreamPositionChanged(double position)
+void QMPwidget::mpStreamPositionChanged(double position)
 {
 	if (m_slider != NULL && m_seekCommand.isEmpty() && m_slider->value() != qRound(position)) {
 		m_slider->disconnect(this);
@@ -830,10 +874,22 @@ void QMPWidget::mpStreamPositionChanged(double position)
 /* Documentation follows */
 
 /*!
- * \class QMPWidget
- * \brief A Qt widget for embedding MPlayer
- * \details
- * This is a small class which allows Qt developers to embed an MPlayer instance into
+ * \mainpage
+ *
+ * \htmlonly
+ * <img src="logo.png" height="80px" align="right" />
+ * \endhtmlonly
+ *
+ * \section toc Contents
+ * \li \ref intro
+ * \li \ref usage
+ * \li \ref playbackmodes
+ * \li \ref shortcuts
+ * \li \ref license
+ *
+ * \section intro Introduction
+ *
+ * QMPwidget is a small class which allows Qt developers to embed an MPlayer instance into
  * their application for convenient video playback. Starting with version 4.4, Qt
  * can be build with Phonon, the KDE multimedia framework (see
  * http://doc.trolltech.com/phonon-overview.html for an overview). However, the Phonon
@@ -847,6 +903,37 @@ void QMPWidget::mpStreamPositionChanged(double position)
  * sure that it is already installed on a user system.
  *
  * For more information about MPlayer, please visit http://www.mplayerhq.hu/ .
+ *
+ * \section usage Usage information
+ *
+ * Please note that in the following, it is assumed you are already using
+ * <a href="http://doc.qt.nokia.com/qmake-running.html">QMake</a> to manage your
+ * build system.
+ *
+ * \subsection inclib Including QMPwidget as a library
+ *
+ * Copy the \p src directory of the source distribution to your project tree. You
+ * might want to rename it, e.g. to \p qmpwidget. Afterwards, rename \p src.pro
+ * to match your directory name, e.g. \p qmpwidget.pro, and adjust it to your needs
+ * (see below for available options). Finally, add the directory to your existing
+ * \p SUBDIRS defintion of the parent directory's project file.
+ *
+ * By default, QMPwidget will result in a single static library located in the parent
+ * directory. Therefore, the parts of the program using the widget need to link
+ * against it. Furthermore, the directory containing the \p QMPwidget source should be
+ * included in the respective \p INCLUDEPATH definitions.
+ *
+ * \subsection incclass Including QMPwidget as a class
+ *
+ * \section playbackmodes Video playback modes
+ *
+ * Normally, embedding of MPlayer is done by attaching the process to an existing window.
+ * Unfortunately, this doesn't work on Mac OS X at all, so QMPwidget provides an additional
+ * "pipe mode" for running MPlayer on this operating system. Although this mode works on all
+ * operating systems, the standard mode should perform significantly better in terms of
+ * CPU usage and audio / video synchronization.
+ *
+ * The pipe mode is included if the QMake configuration variable \p pipemode is set.
  *
  * \section shortcuts Keyboard control
  * The following keyboard shortcuts are implemented. A table listing the
@@ -893,9 +980,6 @@ void QMPWidget::mpStreamPositionChanged(double position)
  *  </tr>
  * </table>
  *
- * \section implementation Implementation details
- * TODO
- *
  * \section license License
 \verbatim
 qmpwidget - A Qt widget for embedding MPlayer
@@ -928,47 +1012,55 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*!
- * \enum QMPWidget::State
+ * \class QMPwidget
+ * \brief A Qt widget for embedding MPlayer
+ * \details
+ * Please refer to the <a href="index.html">main page</a> for detailed usage information and
+ * discussion.
+ */
+
+/*!
+ * \enum QMPwidget::State
  * \brief MPlayer state
  * \details
  * This enumeration is somewhat identical to <a href="http://doc.trolltech.com/phonon.html#State-enum">
- * Phonon's State enum</a>, except that it has an additional
- * member that is used when the MPlayer process has not been started yet (NotStartedState)
+ * Phonon's State enumeration</a>, except that it has an additional
+ * member which is used when the MPlayer process has not been started yet (NotStartedState)
  *
  * <table>
  *  <tr><th>Constant</th><th>Value</th><th>Description</th></tr>
  *  <tr>
- *   <td>\p QMPWidget::NotStartedState</td>
+ *   <td>\p QMPwidget::NotStartedState</td>
  *   <td>\p -1</td>
  *   <td>The Mplayer process has not been started yet or has already terminated.</td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPWidget::LoadingState</td>
+ *   <td>\p QMPwidget::LoadingState</td>
  *   <td>\p 0</td>
  *   <td>The MPlayer process has just been started, but playback has not been started yet.</td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPWidget::StoppedState</td>
+ *   <td>\p QMPwidget::StoppedState</td>
  *   <td>\p 1</td>
  *   <td></td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPWidget::PlayingState</td>
+ *   <td>\p QMPwidget::PlayingState</td>
  *   <td>\p 2</td>
  *   <td></td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPWidget::BufferingState</td>
+ *   <td>\p QMPwidget::BufferingState</td>
  *   <td>\p 3</td>
  *   <td></td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPWidget::PausedState</td>
+ *   <td>\p QMPwidget::PausedState</td>
  *   <td>\p 4</td>
  *   <td></td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPWidget::ErrorState</td>
+ *   <td>\p QMPwidget::ErrorState</td>
  *   <td>\p 5</td>
  *   <td></td>
  *  </tr>
@@ -976,7 +1068,30 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*!
- * \fn void QMPWidget::stateChanged(int state)
+ * \enum QMPwidget::Mode
+ * \brief Video playback mode
+ * \details
+ * This enumeration describes valid modes for video playback. Please see \ref playbackmodes for a
+ * detailed description of both modes.
+ *
+ * <table>
+ *  <tr><th>Constant</th><th>Value</th><th>Description</th></tr>
+ *  <tr>
+ *   <td>\p QMPwidget::EmbeddedMode</td>
+ *   <td>\p 0</td>
+ *   <td>MPlayer will render directly into a Qt widget.</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPwidget::PipedMode</td>
+ *   <td>\p 1</td>
+ *   <td>MPlayer will write the video data into a FIFO which will be parsed in a seperate thread.\n
+ * The frames will be rendered by QMPwidget.</td>
+ *  </tr>
+ * </table>
+ */
+
+/*!
+ * \fn void QMPwidget::stateChanged(int state)
  * \brief Emitted if the state has changed
  * \details
  * This signal is emitted when the state of the MPlayer process changes.
@@ -985,10 +1100,10 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 /*!
- * \fn void QMPWidget::error(const QString &reason)
- * \brief Emitted if the state has changed to QMPWidget::ErrorState
+ * \fn void QMPwidget::error(const QString &reason)
+ * \brief Emitted if the state has changed to QMPwidget::ErrorState
  * \details
- * This signal is emitted when the state of the MPlayer process changes to QMPWidget::ErrorState.
+ * This signal is emitted when the state of the MPlayer process changes to QMPwidget::ErrorState.
  *
  * \param reason Textual error description (may be empty)
  */

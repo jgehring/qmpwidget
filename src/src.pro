@@ -7,8 +7,11 @@ TEMPLATE = lib
 DESTDIR = ..
 TARGET = qmpwidget
 
-QT += network opengl
-
+QT += network 
 CONFIG += staticlib
 
-include(src.pri)
+# Optional features
+QT += opengl
+CONFIG += pipemode
+
+include(qmpwidget.pri)
