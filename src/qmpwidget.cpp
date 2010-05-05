@@ -447,7 +447,7 @@ QMPWidget::QMPWidget(QWidget *parent)
 	p.setColor(QPalette::Window, Qt::black);
 	setPalette(p);
 
-	m_seekTimer.setInterval(100);
+	m_seekTimer.setInterval(50);
 	m_seekTimer.setSingleShot(true);
 	connect(&m_seekTimer, SIGNAL(timeout()), this, SLOT(delayedSeek()));
 
