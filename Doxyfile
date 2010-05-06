@@ -87,17 +87,17 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = src
+INPUT                  = src/qmpwidget.h src/qmpwidget.cpp doc/qmpwidget.doc
 INPUT_ENCODING         = UTF-8
-FILE_PATTERNS          =
+FILE_PATTERNS          = 
 RECURSIVE              = NO
 EXCLUDE                =
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = moc_*
 EXCLUDE_SYMBOLS        =
-EXAMPLE_PATH           =
-EXAMPLE_PATTERNS       =
-EXAMPLE_RECURSIVE      = NO
+EXAMPLE_PATH           = demo
+EXAMPLE_PATTERNS       = *.cpp
+EXAMPLE_RECURSIVE      = YES
 IMAGE_PATH             = misc
 INPUT_FILTER           =
 FILTER_PATTERNS        =
@@ -123,7 +123,7 @@ IGNORE_PREFIX          =
 # configuration options related to the HTML output
 #---------------------------------------------------------------------------
 GENERATE_HTML          = YES
-HTML_OUTPUT            = .
+HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
