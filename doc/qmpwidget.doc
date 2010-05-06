@@ -11,10 +11,12 @@
 \li \ref playbackmodes
 \li \ref shortcuts
 \li \ref license
+\li \ref credits
+
 
 \section intro Introduction
 
-QMPwidget is a small class which allows Qt developers to embed an MPlayer instance into
+%QMPwidget is a small class which allows Qt developers to embed an MPlayer instance into
 their application for convenient video playback. Starting with version 4.4, Qt
 can be build with Phonon, the KDE multimedia framework (see
 http://doc.trolltech.com/phonon-overview.html for an overview). However, the Phonon
@@ -28,6 +30,7 @@ also that you will need to ship a MPlayer binary with your application if you ca
 sure that it is already installed on a user system.
 
 For more information about MPlayer, please visit http://www.mplayerhq.hu/ .
+
 
 \section usage Usage information
 
@@ -45,31 +48,33 @@ to match your directory name, e.g. \p qmpwidget.pro, and adjust it to your needs
 (see below for available options). Finally, add the directory to your existing
 \p SUBDIRS defintion of the parent directory's project file.
 
-By default, QMPwidget will result in a single static library located in the parent
+By default, %QMPwidget will result in a single static library located in the parent
 directory. Therefore, the parts of the program using the widget need to link
-against it. Furthermore, the directory containing the QMPwidget source should be
+against it. Furthermore, the directory containing the %QMPwidget source should be
 included in the respective \p INCLUDEPATH definitions.
 
 \subsubsection incclass As a class
 
 \subsection usewidget Using QMPwidget
 
-You can use QMPwidget just like any other QWidget. First, you should make sure
+You can use %QMPwidget just like any other QWidget. First, you should make sure
 that the MPlayer path used is correct (QMPwidget::mplayerPath()). Finally, you
 can pass the optional parameters of your choice and a media url to QMPwidget::start(),
 which will launch MPlayer and play the media if possible.
 
-Please refer to the QMPwidget class documentation for detailed usage information.
+Please refer to the \ref QMPwidget "QMPwidget class documentation" for detailed usage information.
+
 
 \section playbackmodes Video playback modes
 
 Normally, embedding of MPlayer is done by attaching the process to an existing window.
-Unfortunately, this doesn't work on Mac OS X at all, so QMPwidget provides an additional
+Unfortunately, this doesn't work on Mac OS X at all, so %QMPwidget provides an additional
 "pipe mode" for running MPlayer on this operating system. Although this mode works on all
 operating systems, the standard mode should perform significantly better in terms of
 CPU usage and audio / video synchronization.
 
 The pipe mode is included if the QMake configuration variable \p pipemode is set.
+
 
 \section shortcuts Keyboard control
 The following keyboard shortcuts are implemented. A table listing the
@@ -116,34 +121,30 @@ corresponding key codes can be found at the
  </tr>
 </table>
 
+
 \section license License
 \verbatim
 qmpwidget - A Qt widget for embedding MPlayer
 Copyright (C) 2010 by Jonas Gehring
-All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-   * Redistributions of source code must retain the above copyright
-     notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above copyright
-     notice, this list of conditions and the following disclaimer in the
-     documentation and/or other materials provided with the distribution.
-   * Neither the name of the copyright holders nor the
-     names of its contributors may be used to endorse or promote products
-     derived from this software without specific prior written permission.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGE.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 \endverbatim
+
+
+\section credits Credits
+
+%QMPwidget uses the YCbCr to RGB conversion routines from mjpegtools
+(http://mjpeg.sourceforge.net/).
 
 */
