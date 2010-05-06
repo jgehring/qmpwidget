@@ -11,4 +11,5 @@ SOURCES += \
 
 pipemode: {
 DEFINES += QMP_USE_YUVPIPE
+HEADERS += qmpyuvreader.h
 }

@@ -273,6 +273,3 @@ class QMPYuvReader : public QThread
 		unsigned char *m_saveme;
 		int m_savemeSize;
 };
-
-
-#include "qmpyuvreader.moc"

@@ -44,7 +44,7 @@
 #include "qmpwidget.h"
 
 #ifdef QMP_USE_YUVPIPE
- #include "qmpyuvreader.cpp"
+ #include "qmpyuvreader.h"
 #endif // QMP_USE_YUVPIPE
 
 
