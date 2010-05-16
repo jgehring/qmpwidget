@@ -128,6 +128,9 @@ class QMPwidget : public QWidget
 		void stateChanged(int state);
 		void error(const QString &reason);
 
+		void readStandardOutput(const QString &line);
+		void readStandardError(const QString &line);
+
 	private:
 		QMPProcess *m_process;
 		QWidget *m_widget;

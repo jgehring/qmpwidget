@@ -42,18 +42,39 @@ build system.
 
 \subsubsection inclib As a library
 
+In order to include %QMPwidget as a library, your build system needs to be set up
+using the <a href="http://doc.qt.nokia.com/qmake-variable-reference.html#template">\p subdirs template</a>. \n
 Copy the \p src directory of the source distribution to your project tree. You
 might want to rename it, e.g. to \p qmpwidget. Afterwards, rename \p src.pro
-to match your directory name, e.g. \p qmpwidget.pro, and adjust it to your needs
-(see below for available options). Finally, add the directory to your existing
+to match your directory name, e.g. \p qmpwidget.pro, and adjust it to your needs.
+Finally, add the directory to your existing
 \p SUBDIRS defintion of the parent directory's project file.
 
-By default, %QMPwidget will result in a single static library located in the parent
+By default, %QMPwidget will be built as a single static library located in the parent
 directory. Therefore, the parts of the program using the widget need to link
 against it. Furthermore, the directory containing the %QMPwidget source should be
 included in the respective \p INCLUDEPATH definitions.
 
 \subsubsection incclass As a class
+
+You can also simply add the following files to your project:
+
+<table>
+ <tr><th>File</th><th>Contents</th></tr>
+ <tr>
+  <td>\p qmpwidget.h</td>
+  <td>QMPwidget class definition</td>
+ </tr>
+ <tr>
+  <td>\p qmpwidget.cpp</td>
+  <td>QMPwidget class implementation and related helper classes</td>
+ </tr>
+ <tr>
+  <td>\p qmpyuvreader.h</td>
+  <td>\b Optional: Needs to be included for \ref playbackmodes "pipe mode"</td>
+ </tr>
+</table>
+
 
 \subsection usewidget Using QMPwidget
 
@@ -67,7 +88,7 @@ Please refer to the \ref QMPwidget "QMPwidget class documentation" for detailed 
 
 \section playbackmodes Video playback modes
 
-Normally, embedding of MPlayer is done by attaching the process to an existing window.
+Normally, embedding MPlayer into a GUI application is done by attaching the process to an existing window.
 Unfortunately, this doesn't work on Mac OS X at all, so %QMPwidget provides an additional
 "pipe mode" for running MPlayer on this operating system. Although this mode works on all
 operating systems, the standard mode should perform significantly better in terms of
@@ -77,9 +98,8 @@ The pipe mode is included if the QMake configuration variable \p pipemode is set
 
 
 \section shortcuts Keyboard control
-The following keyboard shortcuts are implemented. A table listing the
-corresponding key codes can be found at the
-<a href="http://doc.trolltech.com/qt.html#Key-enum">Qt documentation</a>.
+The following keyboard shortcuts are implemented. However, you can reimplement
+QMPwidget::keyPressEvent() and extend this list, of course.
 
 <table>
  <tr><th>Key(s)</th><th>Action</th></tr>
@@ -121,6 +141,8 @@ corresponding key codes can be found at the
  </tr>
 </table>
 
+A table listing the corresponding key codes can be found at the
+<a href="http://doc.trolltech.com/qt.html#Key-enum">Qt documentation</a>.
 
 \section license License
 \verbatim

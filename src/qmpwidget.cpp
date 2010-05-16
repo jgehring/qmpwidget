@@ -261,6 +261,9 @@ class QMPProcess : public QProcess
 		void streamPositionChanged(double position);
 		void error(const QString &reason);
 
+		void readStandardOutput(const QString &line);
+		void readStandardError(const QString &line);
+
 	private slots:
 		void readStdout()
 		{
@@ -268,6 +271,7 @@ class QMPProcess : public QProcess
 			for (int i = 0; i < lines.count(); i++) {
 				lines[i].remove("\r");
 				parseLine(lines[i]);
+				emit readStandardOutput(lines[i]);
 			}
 		}
 
@@ -277,6 +281,7 @@ class QMPProcess : public QProcess
 			for (int i = 0; i < lines.count(); i++) {
 				lines[i].remove("\r");
 				parseLine(lines[i]);
+				emit readStandardError(lines[i]);
 			}
 		}
 
@@ -451,6 +456,8 @@ QMPwidget::QMPwidget(QWidget *parent)
 	connect(m_process, SIGNAL(stateChanged(int)), this, SLOT(mpStateChanged(int)));
 	connect(m_process, SIGNAL(streamPositionChanged(double)), this, SLOT(mpStreamPositionChanged(double)));
 	connect(m_process, SIGNAL(error(const QString &)), this, SIGNAL(error(const QString &)));
+	connect(m_process, SIGNAL(readStandardOutput(const QString &)), this, SIGNAL(readStandardOutput(const QString &)));
+	connect(m_process, SIGNAL(readStandardError(const QString &)), this, SIGNAL(readStandardError(const QString &)));
 }
 
 /*!
@@ -866,8 +873,42 @@ void QMPwidget::mpStreamPositionChanged(double position)
  * \class QMPwidget
  * \brief A Qt widget for embedding MPlayer
  * \details
- * Please refer to the <a href="index.html">main page</a> for detailed usage information and
- * discussion.
+ *
+ * \section comm MPlayer communication
+ *
+ * If you want to communicate with MPlayer through its 
+ * <a href="http://www.mplayerhq.hu/DOCS/tech/slave.txt">slave mode protocol</a>,
+ * you can use the writeCommand() slot. If MPlayer writes to its standard output
+ * or standard error channel, the signals readStandardOutput() and
+ * readStandardError() will be emitted.
+ *
+ * \section controls Graphical controls
+ *
+ * \section example Usage example
+ *
+ * A minimal example using this widget to play a low-res version of
+ * <a href="http://www.bigbuckbunny.org/">Big Buck Bunny</a> might look as follows.
+ * Please note that the actual movie URL has been shortened for the sake of clarity.
+\code
+#include <QApplication>
+#include "qmpwidget.h"
+
+// Program entry point
+int main(int argc, char **argv)
+{
+	QApplication app(argc, argv);
+
+	QMPwidget widget;
+	widget.show();
+	widget.start(QStringList("http://tinyurl.com/2vs2kg5"));
+
+	return app.exec();
+}
+\endcode
+ *
+ *
+ * For further information about this project, please refer to the
+ * <a href="index.html">main page</a>.
  */
 
 /*!
@@ -920,7 +961,7 @@ void QMPwidget::mpStreamPositionChanged(double position)
 
 /*!
  * \enum QMPwidget::Mode
- * \brief Video playback mode
+ * \brief Video playback modes
  * \details
  * This enumeration describes valid modes for video playback. Please see \ref playbackmodes for a
  * detailed description of both modes.
@@ -936,7 +977,33 @@ void QMPwidget::mpStreamPositionChanged(double position)
  *   <td>\p QMPwidget::PipedMode</td>
  *   <td>\p 1</td>
  *   <td>MPlayer will write the video data into a FIFO which will be parsed in a seperate thread.\n
- * The frames will be rendered by QMPwidget.</td>
+  The frames will be rendered by QMPwidget.</td>
+ *  </tr>
+ * </table>
+ */
+
+/*!
+ * \enum QMPwidget::SeekMode
+ * \brief Seeking modes
+ * \details
+ * This enumeration describes valid modes for seeking the media stream.
+ *
+ * <table>
+ *  <tr><th>Constant</th><th>Value</th><th>Description</th></tr>
+ *  <tr>
+ *   <td>\p QMPwidget::RelativeSeek</td>
+ *   <td>\p 0</td>
+ *   <td>Relative seek in seconds</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPwidget::PercantageSeek</td>
+ *   <td>\p 1</td>
+ *   <td>Seek to a position given by a percentage of the whole movie duration</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPwidget::AbsoluteSeek</td>
+ *   <td>\p 2</td>
+ *   <td>Seek to a position given by an absolute time</td>
  *  </tr>
  * </table>
  */
@@ -957,4 +1024,18 @@ void QMPwidget::mpStreamPositionChanged(double position)
  * This signal is emitted when the state of the MPlayer process changes to QMPwidget::ErrorState.
  *
  * \param reason Textual error description (may be empty)
+ */
+
+/*!
+ * \fn void QMPwidget::readStandardOutput(const QString &line)
+ * \brief Signal for reading MPlayer's standard output
+ * \details
+ * This signal is emitted when MPlayer wrote a line of text to its standard output channel.
+ */
+
+/*!
+ * \fn void QMPwidget::readStandardError(const QString &line)
+ * \brief Signal for reading MPlayer's standard error
+ * \details
+ * This signal is emitted when MPlayer wrote a line of text to its standard error channel.
  */
