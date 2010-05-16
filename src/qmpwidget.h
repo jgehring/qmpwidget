@@ -35,6 +35,11 @@ class QMPProcess;
 class QMPwidget : public QWidget
 {
 	Q_OBJECT
+	Q_PROPERTY(State state READ state);
+	Q_PROPERTY(double streamPosition READ tell);
+	Q_PROPERTY(QString videoOutput READ videoOutput WRITE setVideoOutput);
+	Q_PROPERTY(QString mplayerPath READ mplayerPath WRITE setMPlayerPath);
+	Q_ENUMS(state);
 
 	public:
 		enum State {
