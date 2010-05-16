@@ -433,7 +433,7 @@ QMPwidget::MediaInfo::MediaInfo()
  * \param parent Parent widget
  */
 QMPwidget::QMPwidget(QWidget *parent)
-	: QWidget(parent), m_slider(NULL)
+	: QWidget(parent)
 {
 	setFocusPolicy(Qt::StrongFocus);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -564,14 +564,12 @@ QString QMPwidget::mplayerPath() const
 /*!
  * \brief Sets a seeking slider for this widget
  */
-void QMPwidget::setSlider(QAbstractSlider *slider)
+void QMPwidget::setSeekSlider(QAbstractSlider *slider)
 {
-	if (m_slider) {
-		m_slider->disconnect(this);
-		disconnect(m_slider);
+	if (m_seekSlider) {
+		m_seekSlider->disconnect(this);
+		disconnect(m_seekSlider);
 	}
-
-	connect(slider, SIGNAL(valueChanged(int)), this, SLOT(seek(int)));
 
 	if (m_process->m_mediaInfo.ok) {
 		slider->setRange(0, m_process->m_mediaInfo.length);
@@ -579,7 +577,27 @@ void QMPwidget::setSlider(QAbstractSlider *slider)
 	if (m_process->m_mediaInfo.ok) {
 		slider->setEnabled(m_process->m_mediaInfo.seekable);
 	}
-	m_slider = slider;
+
+	connect(slider, SIGNAL(valueChanged(int)), this, SLOT(seek(int)));
+	m_seekSlider = slider;
+}
+
+/*!
+ * \brief Sets a volume slider for this widget
+ */
+void QMPwidget::setVolumeSlider(QAbstractSlider *slider)
+{
+	if (m_volumeSlider) {
+		m_volumeSlider->disconnect(this);
+		disconnect(m_volumeSlider);
+	}
+
+
+	slider->setRange(0, 100);
+	slider->setValue(100); // TODO
+
+	connect(slider, SIGNAL(valueChanged(int)), this, SLOT(setVolume(int)));
+	m_volumeSlider = slider;
 }
 
 /*!
@@ -844,11 +862,16 @@ void QMPwidget::delayedSeek()
 	}
 }
 
+void QMPwidget::setVolume(int volume)
+{
+	writeCommand(QString("volume %1 1").arg(volume));
+}
+
 void QMPwidget::mpStateChanged(int state)
 {
-	if (m_slider != NULL && state == PlayingState && m_process->m_mediaInfo.ok) {
-		m_slider->setRange(0, m_process->m_mediaInfo.length);
-		m_slider->setEnabled(m_process->m_mediaInfo.seekable);
+	if (m_seekSlider != NULL && state == PlayingState && m_process->m_mediaInfo.ok) {
+		m_seekSlider->setRange(0, m_process->m_mediaInfo.length);
+		m_seekSlider->setEnabled(m_process->m_mediaInfo.seekable);
 	}
 
 	emit stateChanged(state);
@@ -856,10 +879,19 @@ void QMPwidget::mpStateChanged(int state)
 
 void QMPwidget::mpStreamPositionChanged(double position)
 {
-	if (m_slider != NULL && m_seekCommand.isEmpty() && m_slider->value() != qRound(position)) {
-		m_slider->disconnect(this);
-		m_slider->setValue(qRound(position));
-		connect(m_slider, SIGNAL(valueChanged(int)), this, SLOT(seek(int)));
+	if (m_seekSlider != NULL && m_seekCommand.isEmpty() && m_seekSlider->value() != qRound(position)) {
+		m_seekSlider->disconnect(this);
+		m_seekSlider->setValue(qRound(position));
+		connect(m_seekSlider, SIGNAL(valueChanged(int)), this, SLOT(seek(int)));
+	}
+}
+
+void QMPwidget::mpVolumeChanged(int volume)
+{
+	if (m_volumeSlider != NULL) {
+		m_volumeSlider->disconnect(this);
+		m_volumeSlider->setValue(volume);
+		connect(m_seekSlider, SIGNAL(valueChanged(int)), this, SLOT(setVolume(int)));
 	}
 }
 
@@ -874,7 +906,9 @@ void QMPwidget::mpStreamPositionChanged(double position)
  * \brief A Qt widget for embedding MPlayer
  * \details
  *
- * \section comm MPlayer communication
+ * \section Overview
+ *
+ * \subsection comm MPlayer communication
  *
  * If you want to communicate with MPlayer through its 
  * <a href="http://www.mplayerhq.hu/DOCS/tech/slave.txt">slave mode protocol</a>,
@@ -882,7 +916,10 @@ void QMPwidget::mpStreamPositionChanged(double position)
  * or standard error channel, the signals readStandardOutput() and
  * readStandardError() will be emitted.
  *
- * \section controls Graphical controls
+ * \subsection controls Graphical controls
+ *
+ * You can connect sliders for seeking and volume adjustment to an instance of
+ * this class. Please use setSeekSlider() and setVolumeSlider(), respectively.
  *
  * \section example Usage example
  *

@@ -100,7 +100,8 @@ class QMPwidget : public QWidget
 		void setMPlayerPath(const QString &path);
 		QString mplayerPath() const;
 
-		void setSlider(QAbstractSlider *slider);
+		void setSeekSlider(QAbstractSlider *slider);
+		void setVolumeSlider(QAbstractSlider *slider);
 
 		virtual QSize sizeHint() const;
 
@@ -125,8 +126,11 @@ class QMPwidget : public QWidget
 		void updateWidgetSize();
 
 	private slots:
+		void setVolume(int volume);
+
 		void mpStateChanged(int state);
 		void mpStreamPositionChanged(double position);
+		void mpVolumeChanged(int volume);
 		void delayedSeek();
 
 	signals:
@@ -139,7 +143,8 @@ class QMPwidget : public QWidget
 	private:
 		QMPProcess *m_process;
 		QWidget *m_widget;
-		QPointer<QAbstractSlider> m_slider;
+		QPointer<QAbstractSlider> m_seekSlider;
+		QPointer<QAbstractSlider> m_volumeSlider;
 		Qt::WindowFlags m_windowFlags;
 		QRect m_geometry;
 

@@ -20,7 +20,7 @@
 #include <QApplication>
 #include <QShowEvent>
 #include <QSlider>
-#include <QVBoxLayout>
+#include <QGridLayout>
 
 #include "qmpwidget.h"
 
@@ -70,15 +70,19 @@ int main(int argc, char **argv)
 	// Construct a simple widget with the player and a correspondig slider
 	QWidget widget;
 
-	QVBoxLayout layout(&widget);
+	QGridLayout layout(&widget);
 	widget.setLayout(&layout);
-	QSlider slider(Qt::Horizontal, &widget);
+	QSlider seekSlider(Qt::Horizontal, &widget);
+	QSlider volumeSlider(Qt::Horizontal, &widget);
+	volumeSlider.setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum));
 
 	Player player(&widget);
-	player.setSlider(&slider);
+	player.setSeekSlider(&seekSlider);
+	player.setVolumeSlider(&volumeSlider);
 
-	layout.addWidget(&player);
-	layout.addWidget(&slider);
+	layout.addWidget(&player, 0, 0, 1, 2);
+	layout.addWidget(&seekSlider, 1, 0);
+	layout.addWidget(&volumeSlider, 1, 1);
 	widget.show();
 
 	return app.exec();
