@@ -22,6 +22,10 @@
 #include <QMutex>
 #include <QThread>
 
+#ifdef Q_WS_WIN
+ #include "windows.h"
+#endif
+
 #include <cstdio>
 #include <sys/stat.h>
 

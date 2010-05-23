@@ -9,7 +9,7 @@ HEADERS += \
 SOURCES += \
 	qmpwidget.cpp
 
-pipemode: {
+!win32:pipemode: {
 DEFINES += QMP_USE_YUVPIPE
 HEADERS += qmpyuvreader.h
 }
