@@ -297,9 +297,14 @@ class QMPProcess : public QProcess
 				changeState(QMPwidget::PlayingState);
 			} else if (line.startsWith("File not found: ")) {
 				changeState(QMPwidget::ErrorState);
+			} else if (line.endsWith("ID_PAUSED")) {
+				changeState(QMPwidget::PausedState);
 			} else if (line.startsWith("ID_")) {
 				parseMediaInfo(line);
 			} else if (line.startsWith("A:") || line.startsWith("V:")) {
+				if (m_state != QMPwidget::PlayingState) {
+					changeState(QMPwidget::PlayingState);
+				}
 				parsePosition(line);
 			} else if (line.startsWith("Exiting...")) {
 				changeState(QMPwidget::NotStartedState);
@@ -375,6 +380,10 @@ class QMPProcess : public QProcess
 				m_yuvReader->deleteLater();
 			}
 #endif
+
+			if (m_state == state) {
+				return;
+			}
 
 			m_state = state;
 			emit stateChanged(m_state);
