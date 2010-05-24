@@ -1051,6 +1051,7 @@ void QMPwidget::mpStateChanged(int state)
 		m_seekSlider->setEnabled(m_process->m_mediaInfo.seekable);
 	}
 
+	updateWidgetSize();
 	emit stateChanged(state);
 }
 
