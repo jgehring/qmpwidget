@@ -458,6 +458,7 @@ QMPwidget::MediaInfo::MediaInfo()
 
 /*!
  * \brief Constructor
+ *
  * \param parent Parent widget
  */
 QMPwidget::QMPwidget(QWidget *parent)
@@ -504,6 +505,7 @@ QMPwidget::~QMPwidget()
 
 /*!
  * \brief Returns the current MPlayer process state
+ *
  * \returns The process state
  */
 QMPwidget::State QMPwidget::state() const
@@ -516,6 +518,7 @@ QMPwidget::State QMPwidget::state() const
  * \details
  * Please check QMPwidget::MediaInfo::ok to make sure the media
  * information has been fully parsed.
+ *
  * \returns The media info object
  */
 QMPwidget::MediaInfo QMPwidget::mediaInfo() const
@@ -525,7 +528,9 @@ QMPwidget::MediaInfo QMPwidget::mediaInfo() const
 
 /*!
  * \brief Returns the current playback position
+ *
  * \returns The current playback position in seconds
+ * \sa seek()
  */
 double QMPwidget::tell() const
 {
@@ -536,7 +541,9 @@ double QMPwidget::tell() const
  * \brief Sets the video playback mode
  * \details
  * Please see \ref playbackmodes for a discussion of the available modes.
- * \param Mode The video playback mode
+ *
+ * \param mode The video playback mode
+ * \sa mode()
  */
 void QMPwidget::setMode(Mode mode)
 {
@@ -549,23 +556,71 @@ void QMPwidget::setMode(Mode mode)
 
 /*!
  * \brief Returns the current video playback mode
+ *
  * \returns The current video playback mode
+ * \sa setMode()
  */
 QMPwidget::Mode QMPwidget::mode() const
 {
 	return m_process->m_mode;
 }
 
+/*!
+ * \brief Sets the video output mode
+ * \details
+ * The video output mode string will be passed to MPlayer using its \p -vo option.
+ * Please see http://www.mplayerhq.hu/DOCS/HTML/en/video.html for an overview of
+ * available video output modes.
+ *
+ * Per default, this string will have the following values:
+ * <table>
+ *  <tr><th>System</th><th>Configuration</th><th>Value</th></tr>
+ *  <tr>
+ *   <td>Windows</td>
+ *   <td></td>
+ *   <td>\p "directx,directx:noaccel"</td>
+ *  </tr>
+ *  <tr>
+ *   <td>X11</td>
+ *   <td>Compiled without OpenGL support</td>
+ *   <td>\p "xv"</td>
+ *  </tr>
+ *  <tr>
+ *   <td>X11</td>
+ *   <td>Compiled with OpenGL support</td>
+ *   <td>\p "gl2,gl,xv"</td>
+ *  </tr>
+ *  <tr>
+ *   <td>Mac OS X</td>
+ *   <td>Compiled without OpenGL support</td>
+ *   <td>\p "quartz"</td>
+ *  </tr>
+ *  <tr>
+ *   <td>Mac OS X</td>
+ *   <td>Compiled with OpenGL support</td>
+ *   <td>\p "gl,quartz"</td>
+ *  </tr>
+ * </table>
+ *
+ *
+ * \param output The video output mode string
+ * \sa videoOutput()
+ */
 void QMPwidget::setVideoOutput(const QString &output)
 {
 	m_process->m_videoOutput = output;
 }
 
+/*!
+ * \brief Returns the current video output mode
+ *
+ * \returns The current video output mode
+ * \sa setVideoOutput()
+ */
 QString QMPwidget::videoOutput() const
 {
 	return m_process->m_videoOutput;
 }
-
 
 /*!
  * \brief Sets the path to the MPlayer executable
@@ -575,6 +630,7 @@ QString QMPwidget::videoOutput() const
  * set to "mplayer".
  *
  * \param path Path to the MPlayer executable
+ * \sa mplayerPath()
  */
 void QMPwidget::setMPlayerPath(const QString &path)
 {
@@ -583,14 +639,22 @@ void QMPwidget::setMPlayerPath(const QString &path)
 
 /*!
  * \brief Returns the current path to the MPlayer executable
+ *
+ * \returns The path to the MPlayer executable
+ * \sa setMPlayerPath()
  */
 QString QMPwidget::mplayerPath() const
 {
 	return m_process->m_mplayerPath;
 }
 
-/*
- * \brief Returns the version number of the MPlayer executable
+/*!
+ * \brief Returns the version string of the MPlayer executable
+ * \details
+ * If the mplayer  
+ *
+ *
+ * \returns The version string of the MPlayer executable
  */
 QString QMPwidget::mplayerVersion()
 {
@@ -699,6 +763,7 @@ void QMPwidget::stop()
  * \param offset Seeking offset in seconds
  * \param whence Seeking mode
  * \returns \p true If the seeking mode is valid
+ * \sa tell()
  */
 bool QMPwidget::seek(int offset, int whence)
 {
@@ -711,6 +776,7 @@ bool QMPwidget::seek(int offset, int whence)
  * \param offset Seeking offset in seconds
  * \param whence Seeking mode
  * \returns \p true If the seeking mode is valid
+ * \sa tell()
  */
 bool QMPwidget::seek(double offset, int whence)
 {
@@ -786,6 +852,8 @@ void QMPwidget::writeCommand(const QString &command)
  * \brief Mouse double click event handler
  * \details
  * This implementation will toggle full screen and accept the event
+ *
+ * \param event Mouse event
  */
 void QMPwidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
@@ -798,6 +866,8 @@ void QMPwidget::mouseDoubleClickEvent(QMouseEvent *event)
  * \details
  * This implementation tries to resemble the classic MPlayer interface. For a
  * full list of supported key codes, see \ref shortcuts.
+ *
+ * \param event Key event
  */
 void QMPwidget::keyPressEvent(QKeyEvent *event)
 {
@@ -869,6 +939,13 @@ void QMPwidget::keyPressEvent(QKeyEvent *event)
 	event->setAccepted(accept);
 }
 
+/*!
+ * \brief Resize event handler
+ * \details
+ * If you reimplement this function, you need to call this handler, too.
+ *
+ * \param event Resize event
+ */
 void QMPwidget::resizeEvent(QResizeEvent *event)
 {
 	Q_UNUSED(event);
