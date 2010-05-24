@@ -339,7 +339,7 @@ class QMPProcess : public QProcess
 
 		void readStderr()
 		{
-			QStringList lines = QString::fromLocal8Bit(readAllStandardOutput()).split("\n", QString::SkipEmptyParts);
+			QStringList lines = QString::fromLocal8Bit(readAllStandardError()).split("\n", QString::SkipEmptyParts);
 			for (int i = 0; i < lines.count(); i++) {
 				lines[i].remove("\r");
 				parseLine(lines[i]);
@@ -363,6 +363,8 @@ class QMPProcess : public QProcess
 				changeState(QMPwidget::PausedState);
 			} else if (line.startsWith("ID_")) {
 				parseMediaInfo(line);
+			} else if (line.startsWith("No stream found")) {
+				changeState(QMPwidget::ErrorState, line);
 			} else if (line.startsWith("A:") || line.startsWith("V:")) {
 				if (m_state != QMPwidget::PlayingState) {
 					changeState(QMPwidget::PlayingState);
