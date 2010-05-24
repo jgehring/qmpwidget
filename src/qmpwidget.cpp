@@ -230,6 +230,25 @@ class QMPProcess : public QProcess
 			}
 		}
 
+		QString mplayerVersion()
+		{
+			QProcess p;
+			p.start(m_mplayerPath, QStringList("-version"));
+			if (!p.waitForStarted()) {
+				return QString();
+			}
+			if (!p.waitForFinished()) {
+				return QString();
+			}
+
+			QString output = QString(p.readAll());
+			QRegExp re("(SVN-r[^ ]*)");
+			if (re.indexIn(output) > -1) {
+				return re.cap(1);
+			}
+			return output;
+		}
+
 		QProcess::ProcessState processState() const
 		{
 			return QProcess::state();
@@ -568,6 +587,14 @@ void QMPwidget::setMPlayerPath(const QString &path)
 QString QMPwidget::mplayerPath() const
 {
 	return m_process->m_mplayerPath;
+}
+
+/*
+ * \brief Returns the version number of the MPlayer executable
+ */
+QString QMPwidget::mplayerVersion()
+{
+	return m_process->mplayerVersion();
 }
 
 /*!

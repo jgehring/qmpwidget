@@ -39,6 +39,7 @@ class QMPwidget : public QWidget
 	Q_PROPERTY(double streamPosition READ tell);
 	Q_PROPERTY(QString videoOutput READ videoOutput WRITE setVideoOutput);
 	Q_PROPERTY(QString mplayerPath READ mplayerPath WRITE setMPlayerPath);
+	Q_PROPERTY(QString mplayerVersion READ mplayerVersion);
 	Q_ENUMS(state);
 
 	public:
@@ -99,6 +100,7 @@ class QMPwidget : public QWidget
 
 		void setMPlayerPath(const QString &path);
 		QString mplayerPath() const;
+		QString mplayerVersion();
 
 		void setSeekSlider(QAbstractSlider *slider);
 		void setVolumeSlider(QAbstractSlider *slider);
