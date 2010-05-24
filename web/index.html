@@ -1,9 +1,14 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <meta content="text/html; charset=UTF-8" http-equiv="content-type">
-    <meta name="keywords" content="qmpwidget, mplayer, embedding, qt, video, video widget">
-    <link href="stylesheet.css" rel="stylesheet" type="text/css">
+    <meta content="text/html; charset=UTF-8" http-equiv="content-type" />
+    <meta name="keywords" content="qmpwidget, mplayer, embedding, qt, video, video widget" />
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/humane.js"></script>
+    <script type="text/javascript" src="js/date.js"></script>
+    <script type="text/javascript" src="js/md5.js"></script>
+    <script type="text/javascript" src="js/libgithub.min.js"></script>
+    <link href="stylesheet.css" rel="stylesheet" type="text/css" />
 
     <title>qmpwidget - A Qt widget for embedding MPlayer</title>
 
@@ -14,12 +19,13 @@
 
     <div class="body">
       <div class="sflogo">
-       <a href="http://sourceforge.net/projects/qmpwidget"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=324442&amp;type=16" width="150" height="40" alt="Get qmpwidget at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
+        <a href="http://sourceforge.net/projects/qmpwidget"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=324442&amp;type=16" width="150" height="40" alt="Get qmpwidget at SourceForge.net. Fast, secure and Free Open Source software downloads" /></a>
       </div>
 
       <div class="index">
         <ul>
           <li><a href="#about">About</a></li>
+          <li><a href="#news">News</a></li>
           <li><a href="#content">Content</a></li>
         </ul>
       </div>
@@ -40,6 +46,22 @@
         features, but also that you will need to ship a MPlayer binary with your
         application if you can't make sure that it is already installed on a
         user system.</p>
+
+        <hr />
+        <a name="news"><h3>News</h3></a>
+        <script type="text/javascript">
+          document.write("<p>Latest commits on the master branch:</p>");
+          $(window).load(function () {
+            var c = new libgithub.Badge('jgehring', 'qmpwidget');
+            c.numCommitsIs(5);
+            c.targetIs('#commits');
+          });
+          document.write("<div id=\"commits\"></div>");
+        </script>
+        <noscript>
+          <p>For the latest commits on the master branch, please turn on JavaScript or go
+          to the <a href="http://github.com/jgehring/qmpwidget/commits/master">history page</a> at github.com.</p>
+        </noscript>
 
         <hr />
         <a name="content"><h3>Content</h3></a>
