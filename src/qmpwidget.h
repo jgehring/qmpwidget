@@ -27,6 +27,7 @@
 #include <QWidget>
 
 class QAbstractSlider;
+class QImage;
 class QStringList;
 
 class QMPProcess;
@@ -104,6 +105,8 @@ class QMPwidget : public QWidget
 
 		void setSeekSlider(QAbstractSlider *slider);
 		void setVolumeSlider(QAbstractSlider *slider);
+
+		void showImage(const QImage &image);
 
 		virtual QSize sizeHint() const;
 

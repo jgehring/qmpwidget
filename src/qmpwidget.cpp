@@ -50,6 +50,12 @@ class QMPPlainVideoWidget : public QWidget
 			setMouseTracking(true);
 		}
 
+		void showUserImage(const QImage &image)
+		{
+			m_userImage = image;
+			update();
+		}
+
 	public slots:
 		void displayImage(const QImage &image)
 		{
@@ -63,7 +69,11 @@ class QMPPlainVideoWidget : public QWidget
 			Q_UNUSED(event);
 			QPainter p(this);
 			p.setCompositionMode(QPainter::CompositionMode_Source);
-			if (!m_pixmap.isNull()) {
+
+			if (!m_userImage.isNull()) {
+				p.fillRect(rect(), Qt::black);
+				p.drawImage(rect().center() - m_userImage.rect().center(), m_userImage);
+			} else if (!m_pixmap.isNull()) {
 				p.drawPixmap(rect(), m_pixmap);
 			} else {
 				p.fillRect(rect(), Qt::black);
@@ -73,6 +83,7 @@ class QMPPlainVideoWidget : public QWidget
 
 	private:
 		QPixmap m_pixmap;
+		QImage m_userImage;
 };
 
 
@@ -90,9 +101,31 @@ class QMPOpenGLVideoWidget : public QGLWidget
 			setMouseTracking(true);
 		}
 
+		void showUserImage(const QImage &image)
+		{
+			m_userImage = image;
+
+			makeCurrent();
+			if (m_tex >= 0) {
+				deleteTexture(m_tex);
+			}
+			if (!m_userImage.isNull()) {
+				m_tex = bindTexture(image);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			} else {
+				glViewport(0, 0, width(), qMax(height(), 1));
+			}
+			updateGL();
+		}
+
 	public slots:
 		void displayImage(const QImage &image)
 		{
+			if (!m_userImage.isNull())  {
+				return;
+			}
+
 			makeCurrent();
 			if (m_tex >= 0) {
 				deleteTexture(m_tex);
@@ -122,6 +155,11 @@ class QMPOpenGLVideoWidget : public QGLWidget
 			glLoadIdentity();
 			if (m_tex >= 0) {
 				glBindTexture(GL_TEXTURE_2D, m_tex);
+				if (!m_userImage.isNull()) {
+					QRect r = m_userImage.rect();
+					r.moveTopLeft(rect().center() - m_userImage.rect().center());
+					glViewport(r.x(), r.y(), r.width(), r.height());
+				}
 				glBegin(GL_QUADS);
 				glTexCoord2f(0, 0); glVertex2f(-1, -1);
 				glTexCoord2f(1, 0); glVertex2f( 1, -1);
@@ -132,6 +170,7 @@ class QMPOpenGLVideoWidget : public QGLWidget
 		}
 
 	private:
+		QImage m_userImage;
 		int m_tex;
 };
 
@@ -702,6 +741,27 @@ void QMPwidget::setVolumeSlider(QAbstractSlider *slider)
 
 	connect(slider, SIGNAL(valueChanged(int)), this, SLOT(setVolume(int)));
 	m_volumeSlider = slider;
+}
+
+/*!
+ * \brief Shows a custom image
+ * \details
+ * This function sets a custom image that will be shown instead of the MPlayer
+ * video output. In order to show MPlayer's output again, call this function
+ * with a null image.
+ *
+ * \note If the current playback mode is not set to \p PipeMode, this function
+ * will have no effect if MPlayer draws to the widget.
+ *
+ * \param image Custom image
+ */
+void QMPwidget::showImage(const QImage &image)
+{
+#ifdef QT_OPENGL_LIB
+	qobject_cast<QMPOpenGLVideoWidget *>(m_widget)->showUserImage(image);
+#else
+	qobject_cast<QMPPlainVideoWidget*>(m_widget)->showUserImage(image);
+#endif
 }
 
 /*!
