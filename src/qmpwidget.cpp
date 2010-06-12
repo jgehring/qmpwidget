@@ -33,6 +33,8 @@
 
 #include "qmpwidget.h"
 
+//#define QMP_DEBUG_OUTPUT
+
 #ifdef QMP_USE_YUVPIPE
  #include "qmpyuvreader.h"
 #endif // QMP_USE_YUVPIPE
@@ -297,6 +299,9 @@ class QMPProcess : public QProcess
 			}
 
 			myargs += args;
+#ifdef QMP_DEBUG_OUTPUT
+			qDebug() << myargs;
+#endif
 			QProcess::start(m_mplayerPath, myargs);
 
 			if (m_mode == QMPwidget::PipeMode) {
@@ -370,6 +375,9 @@ class QMPProcess : public QProcess
 			QStringList lines = QString::fromLocal8Bit(readAllStandardOutput()).split("\n", QString::SkipEmptyParts);
 			for (int i = 0; i < lines.count(); i++) {
 				lines[i].remove("\r");
+#ifdef QMP_DEBUG_OUTPUT
+				qDebug("out: \"%s\"", qPrintable(lines[i]));
+#endif
 				parseLine(lines[i]);
 				emit readStandardOutput(lines[i]);
 			}
@@ -380,6 +388,9 @@ class QMPProcess : public QProcess
 			QStringList lines = QString::fromLocal8Bit(readAllStandardError()).split("\n", QString::SkipEmptyParts);
 			for (int i = 0; i < lines.count(); i++) {
 				lines[i].remove("\r");
+#ifdef QMP_DEBUG_OUTPUT
+				qDebug("err: \"%s\"", qPrintable(lines[i]));
+#endif
 				parseLine(lines[i]);
 				emit readStandardError(lines[i]);
 			}
