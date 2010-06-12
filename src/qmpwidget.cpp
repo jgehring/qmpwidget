@@ -23,6 +23,7 @@
 #include <QPainter>
 #include <QProcess>
 #include <QStringList>
+#include <QTemporaryFile>
 #include <QThread>
 #include <QtDebug>
 
@@ -184,7 +185,8 @@ class QMPProcess : public QProcess
 
 	public:
 		QMPProcess(QObject *parent = 0)
-			: QProcess(parent), m_state(QMPwidget::NotStartedState), m_mplayerPath("mplayer")
+			: QProcess(parent), m_state(QMPwidget::NotStartedState), m_mplayerPath("mplayer"),
+			  m_fakeInputconf(NULL)
 #ifdef QMP_USE_YUVPIPE
 			  , m_yuvReader(NULL)
 #endif
@@ -221,6 +223,9 @@ class QMPProcess : public QProcess
 				m_yuvReader->stop();
 			}
 #endif
+			if (m_fakeInputconf != NULL) {
+				delete m_fakeInputconf;
+			}
 		}
 
 		void startMPlayer(QWidget *widget, const QStringList &args)
@@ -233,6 +238,20 @@ class QMPProcess : public QProcess
 #endif
 			}
 
+			// Figure out the mplayer version in order to check if 
+			// "-input nodefault-bindings" is available
+			bool useFakeInputconf = true;
+			QString version = mplayerVersion();
+			if (version.contains("SVN")) { // Check revision
+				QRegExp re("SVN-r([0-9]*)");
+				if (re.indexIn(version) > -1) {
+					int revision = re.cap(1).toInt();
+					if (revision >= 28878) {
+//						useFakeInputconf = false;
+					}
+				}
+			}
+
 			QStringList myargs;
 			myargs += "-slave";
 			myargs += "-noquiet";
@@ -241,8 +260,27 @@ class QMPProcess : public QProcess
 			myargs += "-nokeepaspect";
 			myargs += "-monitorpixelaspect";
 			myargs += "1";
-			myargs += "-input";
-			myargs += "nodefault-bindings:conf=/dev/null";
+			if (!useFakeInputconf) {
+				myargs += "-input";
+				myargs += "nodefault-bindings:conf=/dev/null";
+			} else {
+#ifndef Q_WS_WIN
+				// Ugly hack for older versions of mplayer (used in kmplayer and other)
+				if (m_fakeInputconf == NULL) {
+					m_fakeInputconf = new QTemporaryFile();
+					if (m_fakeInputconf->open()) {
+						writeFakeInputconf(m_fakeInputconf);
+					} else {
+						delete m_fakeInputconf;
+						m_fakeInputconf = NULL;
+					}
+				}
+				if (m_fakeInputconf != NULL) {
+					myargs += "-input";
+					myargs += QString("conf=%1").arg(m_fakeInputconf->fileName());
+				}
+#endif
+			}
 
 			if (m_mode == QMPwidget::EmbeddedMode) {
 				myargs += "-wid";
@@ -281,7 +319,7 @@ class QMPProcess : public QProcess
 			}
 
 			QString output = QString(p.readAll());
-			QRegExp re("(SVN-r[^ ]*)");
+			QRegExp re("MPlayer ([^ ]*)");
 			if (re.indexIn(output) > -1) {
 				return re.cap(1);
 			}
@@ -473,6 +511,28 @@ class QMPProcess : public QProcess
 			m_streamPosition = -1;
 		}
 
+		// Writes a dummy input configuration to the given device
+		void writeFakeInputconf(QIODevice *device)
+		{
+			// Query list of supported keys
+			QProcess p;
+			p.start(m_mplayerPath, QStringList("-input") += "keylist");
+			if (!p.waitForStarted()) {
+				return;
+			}
+			if (!p.waitForFinished()) {
+				return;
+			}
+			QStringList keys = QString(p.readAll()).split("\n", QString::SkipEmptyParts);
+
+			// Write dummy command for each key
+			QTextStream out(device);
+			for (int i = 0; i < keys.count(); i++) {
+				keys[i].remove("\r");
+				out << keys[i] << " " << "ignored" << endl;
+			}
+		}
+
 	public:
 		QMPwidget::State m_state;
 
@@ -485,6 +545,8 @@ class QMPProcess : public QProcess
 		double m_streamPosition; // This is the video position
 
 		QString m_currentTag;
+
+		QTemporaryFile *m_fakeInputconf;
 
 #ifdef QMP_USE_YUVPIPE
 		QMPYuvReader *m_yuvReader;
