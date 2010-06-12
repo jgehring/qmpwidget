@@ -249,7 +249,7 @@ class QMPProcess : public QProcess
 				if (re.indexIn(version) > -1) {
 					int revision = re.cap(1).toInt();
 					if (revision >= 28878) {
-//						useFakeInputconf = false;
+						useFakeInputconf = false;
 					}
 				}
 			}
