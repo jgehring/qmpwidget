@@ -111,7 +111,8 @@ class QMPwidget : public QWidget
 		virtual QSize sizeHint() const;
 
 	public slots:
-		void start(const QStringList &args);
+		void start(const QStringList &args = QStringList());
+		void load(const QString &url);
 		void play();
 		void pause();
 		void stop();

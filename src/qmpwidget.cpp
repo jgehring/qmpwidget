@@ -230,7 +230,8 @@ class QMPProcess : public QProcess
 			}
 		}
 
-		void startMPlayer(QWidget *widget, const QStringList &args)
+		// Starts the MPlayer process in idle mode
+		void start(QWidget *widget, const QStringList &args)
 		{
 			if (m_mode == QMPwidget::PipeMode) {
 #ifdef QMP_USE_YUVPIPE
@@ -256,6 +257,7 @@ class QMPProcess : public QProcess
 
 			QStringList myargs;
 			myargs += "-slave";
+			myargs += "-idle";
 			myargs += "-noquiet";
 			myargs += "-identify";
 			myargs += "-nomouseinput";
@@ -855,17 +857,28 @@ QSize QMPwidget::sizeHint() const
 /*!
  * \brief Starts the MPlayer process with the given arguments
  * \details
- * If there's another process running, it will be terminated first.
+ * If there's another process running, it will be terminated first. MPlayer
+ * will be run in idle mode and is avaiting your commands, e.g. via load().
  *
- * \param args MPlayer command line arguments, typically a media file
+ * \param args MPlayer command line arguments
  */
 void QMPwidget::start(const QStringList &args)
 {
 	if (m_process->processState() == QProcess::Running) {
 		m_process->quit();
 	}
+	m_process->start(m_widget, args);
+}
 
-	m_process->startMPlayer((QMPwidget *)m_widget, args);
+/*!
+ * \brief Loads a file or url and starts playback
+ *
+ * \param url File patho or url
+ */
+void QMPwidget::load(const QString &url)
+{
+	Q_ASSERT_X(m_process->state() != QProcess::NotRunning, "QMPwidget::load()", "MPlayer process not started yet");
+	writeCommand(QString("loadfile %1").arg(url));
 }
 
 /*!

@@ -79,9 +79,9 @@ You can also simply add the following files to your project:
 \subsection usewidget Using QMPwidget
 
 You can use %QMPwidget just like any other QWidget. First, you should make sure
-that the MPlayer path used is correct (QMPwidget::mplayerPath()). Finally, you
-can pass the optional parameters of your choice and a media url to QMPwidget::start(),
-which will launch MPlayer and play the media if possible.
+that the MPlayer path used is correct (QMPwidget::mplayerPath()). Next, you can
+start the MPlayer process using QMPwidget::start(). Finally, load and play a media
+file or url with QMPwidget::load().
 
 Please refer to the \ref QMPwidget "QMPwidget class documentation" for detailed usage information.
 

@@ -18,9 +18,10 @@
 
 
 #include <QApplication>
+#include <QFileDialog>
+#include <QGridLayout>
 #include <QShowEvent>
 #include <QSlider>
-#include <QGridLayout>
 
 #include "qmpwidget.h"
 
@@ -31,9 +32,11 @@ class Player : public QMPwidget
 	Q_OBJECT
 
 	public:
-		Player(QWidget *parent = 0) : QMPwidget(parent)
+		Player(const QStringList &args, const QString &url, QWidget *parent = 0)
+			: QMPwidget(parent), m_url(url)
 		{
 			connect(this, SIGNAL(stateChanged(int)), this, SLOT(stateChanged(int)));
+			QMPwidget::start(args);
 		}
 
 	private slots:
@@ -54,11 +57,12 @@ class Player : public QMPwidget
 		void showEvent(QShowEvent *event)
 		{
 			if (!event->spontaneous() && state() == QMPwidget::NotStartedState) {
-				QStringList args = QApplication::arguments();
-				args.pop_front();
-				QMPwidget::start(args);
+				QMPwidget::load(m_url);
 			}
 		}
+
+	private:
+		QString m_url;
 };
 
 
@@ -76,7 +80,14 @@ int main(int argc, char **argv)
 	QSlider volumeSlider(Qt::Horizontal, &widget);
 	volumeSlider.setSizePolicy(QSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum));
 
-	Player player(&widget);
+	QStringList args = QApplication::arguments();
+	QString url;
+	args.pop_front();
+	if (!args.isEmpty() && !args.last().startsWith("-")) {
+		url = args.last();
+		args.pop_back();
+	}
+	Player player(args, url, &widget);
 	player.setSeekSlider(&seekSlider);
 	player.setVolumeSlider(&volumeSlider);
 
