@@ -61,6 +61,19 @@ class Player : public QMPwidget
 			}
 		}
 
+		void keyPressEvent(QKeyEvent *event)
+		{
+			if (event->key() == Qt::Key_O) {
+				QString url = QFileDialog::getOpenFileName(this, tr("Play media file..."));
+				if (!url.isEmpty()) {
+					m_url = url;
+					QMPwidget::load(m_url);
+				}
+			} else {
+				QMPwidget::keyPressEvent(event);
+			}
+		}
+
 	private:
 		QString m_url;
 };
