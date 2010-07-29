@@ -46,6 +46,7 @@ class QMPwidget : public QWidget
 	public:
 		enum State {
 			NotStartedState = -1,
+			IdleState,
 			LoadingState,
 			StoppedState,
 			PlayingState,

@@ -56,7 +56,7 @@ class Player : public QMPwidget
 	protected:
 		void showEvent(QShowEvent *event)
 		{
-			if (!event->spontaneous() && state() == QMPwidget::NotStartedState) {
+			if (!event->spontaneous() && state() == QMPwidget::IdleState) {
 				QMPwidget::load(m_url);
 			}
 		}

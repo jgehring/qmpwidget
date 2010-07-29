@@ -305,6 +305,7 @@ class QMPProcess : public QProcess
 			qDebug() << myargs;
 #endif
 			QProcess::start(m_mplayerPath, myargs);
+			changeState(QMPwidget::IdleState);
 
 			if (m_mode == QMPwidget::PipeMode) {
 #ifdef QMP_USE_YUVPIPE
@@ -1230,33 +1231,38 @@ int main(int argc, char **argv)
  *   <td>The Mplayer process has not been started yet or has already terminated.</td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPwidget::LoadingState</td>
+ *   <td>\p QMPwidget::IdleState</td>
  *   <td>\p 0</td>
- *   <td>The MPlayer process has just been started, but playback has not been started yet.</td>
+ *   <td>The MPlayer process has been started, but is idle and waiting for commands.</td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPwidget::LoadingState</td>
+ *   <td>\p 1</td>
+ *   <td>The media file is being loaded, but playback has not been started yet.</td>
  *  </tr>
  *  <tr>
  *   <td>\p QMPwidget::StoppedState</td>
- *   <td>\p 1</td>
- *   <td></td>
+ *   <td>\p 2</td>
+ *   <td>This constant is deprecated and is not being used</td>
  *  </tr>
  *  <tr>
  *   <td>\p QMPwidget::PlayingState</td>
- *   <td>\p 2</td>
- *   <td></td>
- *  </tr>
- *  <tr>
- *   <td>\p QMPwidget::BufferingState</td>
  *   <td>\p 3</td>
  *   <td></td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPwidget::PausedState</td>
+ *   <td>\p QMPwidget::BufferingState</td>
  *   <td>\p 4</td>
  *   <td></td>
  *  </tr>
  *  <tr>
- *   <td>\p QMPwidget::ErrorState</td>
+ *   <td>\p QMPwidget::PausedState</td>
  *   <td>\p 5</td>
+ *   <td></td>
+ *  </tr>
+ *  <tr>
+ *   <td>\p QMPwidget::ErrorState</td>
+ *   <td>\p 6</td>
  *   <td></td>
  *  </tr>
  * </table>
