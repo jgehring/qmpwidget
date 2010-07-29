@@ -666,6 +666,16 @@ double QMPwidget::tell() const
 }
 
 /*!
+ * \brief Returns the MPlayer process
+ *
+ * \returns The MPlayer process
+ */
+QProcess *QMPwidget::process() const
+{
+	return m_process;
+}
+
+/*!
  * \brief Sets the video playback mode
  * \details
  * Please see \ref playbackmodes for a discussion of the available modes.

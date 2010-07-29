@@ -28,6 +28,7 @@
 
 class QAbstractSlider;
 class QImage;
+class QProcess;
 class QStringList;
 
 class QMPProcess;
@@ -93,6 +94,7 @@ class QMPwidget : public QWidget
 		State state() const;
 		MediaInfo mediaInfo() const;
 		double tell() const;
+		QProcess *process() const;
 
 		void setMode(Mode mode);
 		Mode mode() const;
