@@ -216,6 +216,7 @@ class QMPProcess : public QProcess
 
 			connect(this, SIGNAL(readyReadStandardOutput()), this, SLOT(readStdout()));
 			connect(this, SIGNAL(readyReadStandardError()), this, SLOT(readStderr()));
+			connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(finished()));
 		}
 
 		~QMPProcess()
@@ -399,6 +400,12 @@ class QMPProcess : public QProcess
 			}
 		}
 
+		void finished()
+		{
+			changeState(QMPwidget::NotStartedState);
+		}
+
+	private:
 		// Parses a line of MPlayer output
 		void parseLine(const QString &line)
 		{
