@@ -896,6 +896,14 @@ void QMPwidget::start(const QStringList &args)
 void QMPwidget::load(const QString &url)
 {
 	Q_ASSERT_X(m_process->state() != QProcess::NotRunning, "QMPwidget::load()", "MPlayer process not started yet");
+
+	// From the MPlayer slave interface documentation:
+	// "Try using something like [the following] to switch to the next file.
+	// It avoids audio playback starting to play the old file for a short time
+	// before switching to the new one.
+	writeCommand("pausing_keep_force pt_step 1");
+	writeCommand("get_property pause");
+
 	writeCommand(QString("loadfile %1").arg(url));
 }
 
