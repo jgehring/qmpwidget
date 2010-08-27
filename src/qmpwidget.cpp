@@ -214,9 +214,13 @@ class QMPProcess : public QProcess
  #endif
 #endif
 
+			m_movieFinishedTimer.setSingleShot(true);
+			m_movieFinishedTimer.setInterval(100);
+
 			connect(this, SIGNAL(readyReadStandardOutput()), this, SLOT(readStdout()));
 			connect(this, SIGNAL(readyReadStandardError()), this, SLOT(readStderr()));
 			connect(this, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(finished()));
+			connect(&m_movieFinishedTimer, SIGNAL(timeout()), this, SLOT(movieFinished()));
 		}
 
 		~QMPProcess()
@@ -402,7 +406,15 @@ class QMPProcess : public QProcess
 
 		void finished()
 		{
+			// Called if the *process* has finished
 			changeState(QMPwidget::NotStartedState);
+		}
+
+		void movieFinished()
+		{
+			if (m_state == QMPwidget::PlayingState) {
+				changeState(QMPwidget::IdleState);
+			}
 		}
 
 	private:
@@ -484,6 +496,11 @@ class QMPProcess : public QProcess
 			for (int i = 0; i < info.count(); i++) {
 				if (info[i] == "V" && info.count() > i) {
 					m_streamPosition = info[i+1].toDouble();
+
+					// If the movie is near its end, start a timer that will check whetther
+					if (qAbs(m_streamPosition - m_mediaInfo.length) < 1) {
+						m_movieFinishedTimer.start();
+					}
 					break;
 				}
 			}
@@ -493,7 +510,6 @@ class QMPProcess : public QProcess
 			}
 		}
 
-	private:
 		// Changes the current state, possibly emitting multiple signals
 		void changeState(QMPwidget::State state, const QString &comment = QString())
 		{
@@ -506,6 +522,10 @@ class QMPProcess : public QProcess
 
 			if (m_state == state) {
 				return;
+			}
+
+			if (m_state == QMPwidget::PlayingState) {
+				m_movieFinishedTimer.stop();
 			}
 
 			m_state = state;
@@ -564,6 +584,7 @@ class QMPProcess : public QProcess
 
 		QMPwidget::MediaInfo m_mediaInfo;
 		double m_streamPosition; // This is the video position
+		QTimer m_movieFinishedTimer;
 
 		QString m_currentTag;
 
