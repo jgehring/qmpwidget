@@ -10,7 +10,7 @@ DESTDIR = ..
 QT += network opengl
 
 INCLUDEPATH += ../src
-LIBPATH += ..
+QMAKE_LIBDIR += ..
 LIBS += -lqmpwidget
 
 include(demo.pri)
