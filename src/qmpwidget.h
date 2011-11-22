@@ -89,7 +89,7 @@ class QMPwidget : public QWidget
 
 	public:
 		QMPwidget(QWidget *parent = 0);
-		~QMPwidget();
+		virtual ~QMPwidget();
 
 		State state() const;
 		MediaInfo mediaInfo() const;
