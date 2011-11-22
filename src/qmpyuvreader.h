@@ -40,17 +40,23 @@ class QMPYuvReader : public QThread
 		QMPYuvReader(QObject *parent = 0)
 			: QThread(parent), m_saveme(NULL), m_savemeSize(-1)
 		{
+			QString tdir = QDir::tempPath();
+
 			// Create pipe in a temporary directory
-			char temp[12];
-			while (true) {
-				strcpy(temp, "XXXXXX");
-				mkdtemp(temp);
-				strcat(temp, "/fifo");
-				if (mkfifo(temp, 0600) == 0) {
-					break;
-				}
+			char *temp = new char[tdir.length() + 12];
+			strcpy(temp, tdir.toLocal8Bit().data());
+			strcat(temp, "/XXXXXX");
+			if (mkdtemp(temp) == NULL) {
+				qWarning("Can't create temporary directory");
+				return;
 			}
-			m_pipe = temp;
+			strcat(temp, "/fifo");
+			if (mkfifo(temp, 0600) != 0) {
+				qWarning("Can't create pipe");
+				return;
+			}
+			m_pipe = QString(temp);
+			delete[] temp;
 
 			initTables();
 		}
