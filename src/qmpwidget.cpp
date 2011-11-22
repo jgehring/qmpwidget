@@ -591,7 +591,7 @@ class QMPProcess : public QProcess
 		QTemporaryFile *m_fakeInputconf;
 
 #ifdef QMP_USE_YUVPIPE
-		QMPYuvReader *m_yuvReader;
+		QPointer<QMPYuvReader> m_yuvReader;
 #endif
 };
 
@@ -925,7 +925,7 @@ void QMPwidget::load(const QString &url)
 	writeCommand("pausing_keep_force pt_step 1");
 	writeCommand("get_property pause");
 
-	writeCommand(QString("loadfile %1").arg(url));
+	writeCommand(QString("loadfile '%1'").arg(url));
 }
 
 /*!
