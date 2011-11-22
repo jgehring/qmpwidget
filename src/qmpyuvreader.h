@@ -86,6 +86,7 @@ class QMPYuvReader : public QThread
 		{
 			FILE *f = fopen(m_pipe.toLocal8Bit().data(), "rb");
 			if (f == NULL) {
+				qWarning("Can't open pipe");
 				return;
 			}
 
@@ -95,6 +96,7 @@ class QMPYuvReader : public QThread
 			int n = fscanf(f, "YUV4MPEG2 W%d H%d F%d:1 I%c A%d:%d", &width, &height, &fps, &c, &t1, &t2);
 			if (n < 3) {
 				fclose(f);
+				qWarning("Unsupported pipe format");
 				return;
 			}
 
@@ -106,8 +108,8 @@ class QMPYuvReader : public QThread
 			QImage image(width, height, QImage::Format_ARGB32);
 
 			// Read frames
-			const int ysize = width * height;
-			const int csize = width * height / 4;
+			const unsigned int ysize = width * height;
+			const unsigned int csize = width * height / 4;
 			while (true) {
 				m_mutex.lock();
 				if (m_stop) {
@@ -116,15 +118,28 @@ class QMPYuvReader : public QThread
 				}
 				m_mutex.unlock();
 
-				fread(yuv[0], 1, 6, f);
-				fread(yuv[0], 1, ysize, f);
-				fread(yuv[1], 1, csize, f);
-				fread(yuv[2], 1, csize, f);
+				if (fread(yuv[0], 1, 6, f) != 6) {
+					goto ioerror;
+				}
+				if (fread(yuv[0], 1, ysize, f) != ysize) {
+					goto ioerror;
+				}
+				if (fread(yuv[1], 1, csize, f) != csize) {
+					goto ioerror;
+				}
+				if (fread(yuv[2], 1, csize, f) != csize) {
+					goto ioerror;
+				}
 				supersample(yuv[1], width, height);
 				supersample(yuv[2], width, height);
 				yuvToQImage(yuv, &image, width, height);
 
 				emit imageReady(image);
+				continue;
+
+ioerror:
+				qWarning("I/O error reading from pipe");
+				break;
 			}
 
 			delete[] yuv[0];
