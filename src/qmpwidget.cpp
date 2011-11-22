@@ -346,6 +346,9 @@ class QMPProcess : public QProcess
 
 		void writeCommand(const QString &command)
 		{
+#ifdef QMP_DEBUG_OUTPUT
+			qDebug("in: \"%s\"", qPrintable(command));
+#endif
 			QProcess::write(command.toLocal8Bit()+"\n");
 		}
 
