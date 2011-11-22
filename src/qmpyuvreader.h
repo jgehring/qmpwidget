@@ -38,7 +38,7 @@ class QMPYuvReader : public QThread
 	public:
 		// Constructor
 		QMPYuvReader(QObject *parent = 0)
-			: QThread(parent), m_saveme(NULL), m_savemeSize(-1)
+			: QThread(parent), m_stop(false), m_saveme(NULL), m_savemeSize(-1)
 		{
 			QString tdir = QDir::tempPath();
 
