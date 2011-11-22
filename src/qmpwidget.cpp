@@ -984,18 +984,11 @@ bool QMPwidget::seek(double offset, int whence)
 {
 	m_seekTimer.stop(); // Cancel all current seek requests
 
-	int mode;
 	switch (whence) {
 		case RelativeSeek:
-			mode = 0;
-			break;
 		case PercentageSeek:
-			mode = 1;
-			break;
 		case AbsoluteSeek:
-			mode = 2;
 			break;
-
 		default:
 			return false;
 	}
