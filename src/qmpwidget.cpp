@@ -500,7 +500,8 @@ class QMPProcess : public QProcess
 				if (info[i] == "V" && info.count() > i) {
 					m_streamPosition = info[i+1].toDouble();
 
-					// If the movie is near its end, start a timer that will check whetther
+					// If the movie is near its end, start a timer that will check whether
+					// the movie has really finished.
 					if (qAbs(m_streamPosition - m_mediaInfo.length) < 1) {
 						m_movieFinishedTimer.start();
 					}
