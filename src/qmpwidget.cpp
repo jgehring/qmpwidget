@@ -505,7 +505,6 @@ class QMPProcess : public QProcess
 					if (qAbs(m_streamPosition - m_mediaInfo.length) < 1) {
 						m_movieFinishedTimer.start();
 					}
-					break;
 				}
 			}
 
