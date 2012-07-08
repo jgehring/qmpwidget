@@ -497,7 +497,7 @@ class QMPProcess : public QProcess
 
 			double oldpos = m_streamPosition;
 			for (int i = 0; i < info.count(); i++) {
-				if (info[i] == "V" && info.count() > i) {
+				if ( (info[i] == "V" || info[i] == "A") && info.count() > i) {
 					m_streamPosition = info[i+1].toDouble();
 
 					// If the movie is near its end, start a timer that will check whether
