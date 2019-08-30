@@ -195,17 +195,17 @@ class QMPProcess : public QProcess
 		{
 			resetValues();
 
-#ifdef Q_WS_WIN
+#if defined(Q_WS_WIN) || defined(Q_OS_WIN)
 			m_mode = QMPwidget::EmbeddedMode;
 			m_videoOutput = "directx,directx:noaccel";
-#elif defined(Q_WS_X11)
+#elif defined(Q_WS_X11) || defined(Q_OS_UNIX) || defined(Q_OS_LINUX)
 			m_mode = QMPwidget::EmbeddedMode;
  #ifdef QT_OPENGL_LIB
 			m_videoOutput = "gl2,gl,xv";
  #else
 			m_videoOutput = "xv";
  #endif
-#elif defined(Q_WS_MAC)
+#elif defined(Q_WS_MAC) || defined(Q_OS_MACOS)
 			m_mode = QMPwidget::PipeMode;
  #ifdef QT_OPENGL_LIB
 			m_videoOutput = "gl,quartz";
@@ -273,7 +273,7 @@ class QMPProcess : public QProcess
 				myargs += "-input";
 				myargs += "nodefault-bindings:conf=/dev/null";
 			} else {
-#ifndef Q_WS_WIN
+#if !(defined(Q_WS_WIN) || defined(Q_OS_WIN))
 				// Ugly hack for older versions of mplayer (used in kmplayer and other)
 				if (m_fakeInputconf == NULL) {
 					m_fakeInputconf = new QTemporaryFile();
@@ -1009,7 +1009,7 @@ void QMPwidget::toggleFullScreen()
 		m_geometry = geometry();
 		setWindowFlags((windowFlags() | Qt::Window));
 		// From Phonon::VideoWidget
-#ifdef Q_WS_X11
+#if defined(Q_WS_X11) || defined(Q_OS_UNIX) || defined(Q_OS_LINUX)
 		show();
 		raise();
 		setWindowState(windowState() | Qt::WindowFullScreen);
